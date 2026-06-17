@@ -75,16 +75,20 @@ export default function LoginPage() {
 
       if (perfilError) throw new Error(perfilError.message);
 
-      // 4. Resetear contador de intentos (porque logró entrar)
-     // Después del login exitoso
-await supabase.rpc('reset_login_attempts', { user_id: data.user.id });
-console.log(' Contador de intentos reiniciado');
+     // 4. Resetear contador de intentos (porque logró entrar)
+console.log('🔃 Intentando resetear contador...');
+try {
+  await supabase.rpc('reset_login_attempts', { user_id: data.user.id });
+  console.log(' Contador de intentos reiniciado');
+} catch (err) {
+  console.error('Error al resetear contador:', err);
+}
 
       // 5. Validación de roles
       if (perfil.rol !== role) {
         const rolSeleccionado = roleLabels[role];
         const rolReal = roleLabels[perfil.rol];
-        setError(`❌ El rol seleccionado (${rolSeleccionado}) no coincide con el rol de la cuenta (${rolReal}).`);
+        setError(`El rol seleccionado (${rolSeleccionado}) no coincide con el rol de la cuenta (${rolReal}).`);
         setLoading(false);
         return;
       }
