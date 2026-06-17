@@ -4,6 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/src/lib/supabaseClient';
 import { FaHeadphones } from 'react-icons/fa';
+
+// Definir el tipo para la respuesta de la función RPC
+type FailedLoginResult = {
+  blocked: boolean;
+  attempts: number;
+  blocked_until: string | null;
+  message: string;
+};
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,13 +33,38 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      // 1. Intentar iniciar sesión
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw new Error(error.message);
+      // 2. Si hay error de autenticación (credenciales inválidas)
+      if (error) {
+        // Llamar a la función RPC para registrar el intento fallido
+        const { data: failData, error: failError } = await supabase.rpc(
+          'handle_failed_login',
+          { user_email: email }
+        );
 
+        if (failError) {
+          console.error('Error al registrar intento fallido:', failError);
+          setError('Error al procesar la solicitud');
+        } else {
+          const result = failData as FailedLoginResult;
+          if (result?.blocked === true) {
+            const blockedUntil = new Date(result.blocked_until!);
+            const minutesLeft = Math.ceil((blockedUntil.getTime() - Date.now()) / 60000);
+            setError(`Cuenta bloqueada por 15 minutos. Reintenta en ${minutesLeft} minuto(s).`);
+          } else {
+            setError(` Credenciales incorrectas. ${result?.message || 'Intento fallido'}`);
+          }
+        }
+        setLoading(false);
+        return; // Detener el flujo
+      }
+
+      // 3. Login exitoso: obtener el rol
       const { data: perfil, error: perfilError } = await supabase
         .from('perfiles')
         .select('rol')
@@ -39,6 +73,19 @@ export default function LoginPage() {
 
       if (perfilError) throw new Error(perfilError.message);
 
+      // 4. Resetear contador de intentos (porque logró entrar)
+      await supabase.rpc('reset_login_attempts', { user_id: data.user.id });
+
+      // 5. Validación de roles
+      if (perfil.rol !== role) {
+        const rolSeleccionado = roleLabels[role];
+        const rolReal = roleLabels[perfil.rol];
+        setError(`❌ El rol seleccionado (${rolSeleccionado}) no coincide con el rol de la cuenta (${rolReal}).`);
+        setLoading(false);
+        return;
+      }
+
+      // 6. Redirigir según rol
       if (perfil.rol === 'jefe_ti') router.push('/dashboard/jefe');
       else if (perfil.rol === 'tecnico') router.push('/dashboard/tecnico');
       else router.push('/dashboard/usuario');
@@ -51,20 +98,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f3f4f6] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-[#dbeafe] px-4">
       <div className="w-full max-w-[400px] bg-white rounded-2xl shadow-lg p-8">
-        {/* Título y subtítulo */}
         <h1 className="text-3xl font-bold text-center text-[#1e293b] tracking-tight">
           <div className="flex justify-center mb-2">
             <FaHeadphones className="text-5xl text-blue-600" />
-           </div>
+          </div>
           Help Desk TI
         </h1>
         <p className="text-center text-[#64748b] text-base mt-1">
           Inicia sesión para continuar
         </p>
 
-        {/* Selector de rol (píldoras) */}
         <div className="flex justify-center gap-3 mt-6">
           {Object.entries(roleLabels).map(([key, label]) => (
             <button
@@ -83,7 +128,6 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleLogin} className="mt-6">
-          {/* Correo electrónico */}
           <div className="mb-4">
             <input
               type="email"
@@ -95,7 +139,6 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Contraseña */}
           <div className="mb-4">
             <input
               type="password"
@@ -107,14 +150,12 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Mensaje de error */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-200">
               {error}
             </div>
           )}
 
-          {/* Botón Iniciar sesión */}
           <button
             type="submit"
             disabled={loading}
@@ -124,7 +165,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Enlace ¿Olvidaste tu contraseña? */}
         <div className="mt-5 text-center">
           <a href="#" className="text-sm text-[#2563eb] hover:underline">
             ¿Olvidaste tu contraseña?
