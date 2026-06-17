@@ -5,35 +5,30 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/src/lib/supabaseClient';
 
 export default function RegisterUserPage() {
-  // ============ ESTADOS DEL FORMULARIO ============
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [rol, setRol] = useState('usuario');
+  const [area, setArea] = useState('');
   const [telefono, setTelefono] = useState('');
   const [cargo, setCargo] = useState('');
-
-  // ============ ESTADOS DE UI ============
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const router = useRouter();
 
-  // ============ MANEJO DEL ENVÍO ============
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess(false);
     setLoading(true);
 
-    // --- Validación de campos obligatorios ---
     if (!nombre.trim() || !apellido.trim() || !email.trim() || !rol) {
       setError('❌ Los campos Nombre, Apellido, Correo y Rol son obligatorios.');
       setLoading(false);
       return;
     }
 
-    // --- Validación básica de email ---
     if (!email.includes('@') || !email.includes('.')) {
       setError('❌ Ingresa un correo electrónico válido.');
       setLoading(false);
@@ -41,7 +36,6 @@ export default function RegisterUserPage() {
     }
 
     try {
-      // --- Obtener el token de sesión (para autenticar la petición) ---
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
@@ -49,7 +43,6 @@ export default function RegisterUserPage() {
         throw new Error('No tienes sesión activa. Inicia sesión nuevamente.');
       }
 
-      // --- Llamar a la Edge Function para crear el usuario ---
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/register-user`,
         {
@@ -60,9 +53,10 @@ export default function RegisterUserPage() {
           },
           body: JSON.stringify({
             email,
-            password: 'Temporal123!', // Contraseña temporal, el usuario la cambiará al entrar
+            password: 'Temporal123!',
             nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
             rol,
+            area: area.trim() || null,
             telefono: telefono.trim() || null,
             cargo: cargo.trim() || null,
           }),
@@ -75,55 +69,66 @@ export default function RegisterUserPage() {
         throw new Error(result.error || 'Error al registrar usuario');
       }
 
-      // --- Éxito ---
       setSuccess(true);
       setError('');
-      // Limpiar formulario (opcional)
       setNombre('');
       setApellido('');
       setEmail('');
+      setArea('');
       setTelefono('');
       setCargo('');
 
-      // Redirigir al listado de usuarios después de 2 segundos
       setTimeout(() => {
         router.push('/admin/usuarios');
       }, 2000);
     } catch (err: unknown) {
-  console.error('Error en registro:', err);
-  const errorMessage = err instanceof Error ? err.message : 'Error al procesar la solicitud';
-  setError(`❌ ${errorMessage}`);
-}finally {
+      console.error('Error en registro:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error al procesar la solicitud';
+      setError(`❌ ${errorMessage}`);
+    } finally {
       setLoading(false);
     }
   };
 
-  // ============ RENDERIZADO DEL FORMULARIO ============
   return (
-    <div className="min-h-screen bg-[#f3f4f6] p-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
-        {/* Título */}
-        <h1 className="text-2xl font-bold text-[#1e293b] mb-6">
-          Registrar nuevo usuario
-        </h1>
+    <div className="min-h-screen bg-[#f3f4f6] p-8 flex items-center justify-center">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-8">
+        {/* Título con icono de DOS PERSONAS (una al lado de la otra) */}
+        <div className="flex items-center gap-3 mb-6">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-blue-600"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <h1 className="text-2xl font-bold text-[#1e293b] tracking-tight">
+            Registrar nuevo usuario
+          </h1>
+        </div>
 
-        {/* Mensaje de éxito */}
         {success && (
-          <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-xl border border-green-200 flex items-center gap-2">
-            <span className="text-xl">✅</span>
-            <span>Usuario registrado correctamente. Se ha enviado un correo de bienvenida.</span>
+          <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200">
+            ✅ Usuario registrado correctamente. Se ha enviado un correo de bienvenida.
           </div>
         )}
 
-        {/* Mensaje de error */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-xl border border-red-200 flex items-start gap-2">
-            <span className="text-xl">⚠️</span>
-            <span>{error}</span>
+          <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+            {error}
           </div>
         )}
 
-        {/* ============ FORMULARIO ============ */}
         <form onSubmit={handleSubmit}>
           {/* Fila 1: Nombre y Apellido */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -135,8 +140,8 @@ export default function RegisterUserPage() {
                 type="text"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                placeholder="Ej. Juan"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                placeholder="Nombre"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
                 required
               />
             </div>
@@ -148,14 +153,14 @@ export default function RegisterUserPage() {
                 type="text"
                 value={apellido}
                 onChange={(e) => setApellido(e.target.value)}
-                placeholder="Ej. Pérez"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                placeholder="Apellido"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
                 required
               />
             </div>
           </div>
 
-          {/* Fila 2: Correo electrónico */}
+          {/* Fila 2: Correo corporativo */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Correo corporativo <span className="text-red-500">*</span>
@@ -165,56 +170,70 @@ export default function RegisterUserPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@empresa.pe"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
               required
             />
           </div>
 
-          {/* Fila 3: Rol funcional */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Rol <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={rol}
-              onChange={(e) => setRol(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-            >
-              <option value="usuario">Usuario</option>
-              <option value="tecnico">Técnico</option>
-              <option value="jefe_ti">Jefe TI</option>
-            </select>
+          {/* Fila 3: Rol y Área (lado a lado) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Rol <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={rol}
+                onChange={(e) => setRol(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-800"
+              >
+                <option value="usuario">Usuario</option>
+                <option value="tecnico">Técnico</option>
+                <option value="jefe_ti">Jefe TI</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Área / Departamentos
+              </label>
+              <input
+                type="text"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                placeholder="Seleccionar área"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+              />
+            </div>
           </div>
 
-          {/* Fila 4: Teléfono interno (opcional) */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Teléfono interno
-            </label>
-            <input
-              type="text"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              placeholder="Ext. 000"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
+          {/* Fila 4: Teléfono interno y Cargo (lado a lado) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Teléfono interno
+              </label>
+              <input
+                type="text"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                placeholder="Ext. 009"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cargo
+              </label>
+              <input
+                type="text"
+                value={cargo}
+                onChange={(e) => setCargo(e.target.value)}
+                placeholder="Ej. Analista"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 placeholder-gray-500"
+              />
+            </div>
           </div>
 
-          {/* Fila 5: Cargo (opcional) */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cargo
-            </label>
-            <input
-              type="text"
-              value={cargo}
-              onChange={(e) => setCargo(e.target.value)}
-              placeholder="Ej. Analista"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
-
-          {/* ============ BOTONES ============ */}
+          {/* Botones */}
           <div className="flex justify-end gap-4 border-t border-gray-200 pt-6">
             <button
               type="button"
