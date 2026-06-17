@@ -48,9 +48,11 @@ export default function LoginPage() {
         );
 
         if (failError) {
-          console.error('Error al registrar intento fallido:', failError);
-          setError('Error al procesar la solicitud');
-        } else {
+  console.error(' Error RPC completo:', failError);
+  console.error(' Detalles del error:', failError.message, failError.details);
+  setError('Error al procesar la solicitud');
+} else {
+  console.log('✅ Respuesta RPC:', failData);
           const result = failData as FailedLoginResult;
           if (result?.blocked === true) {
             const blockedUntil = new Date(result.blocked_until!);
