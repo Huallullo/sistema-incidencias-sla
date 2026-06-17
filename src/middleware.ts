@@ -1,44 +1,72 @@
 // src/middleware.ts
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
+  // Creamos la respuesta base
+  const supabaseResponse = NextResponse.next({
+    request,
+  });
+
+  // Creamos el cliente de Supabase con el manejo de cookies correcto
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean; httpOnly?: boolean }) {
-          request.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: { path?: string; maxAge?: number; domain?: string; secure?: boolean; httpOnly?: boolean }) {
-          request.cookies.set({ name, value: '', ...options });
+        setAll(cookiesToSet) {
+          // Establecer cookies en la solicitud (para el resto de la ejecución)
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Usamos la forma de objeto para set, que es la correcta en Next.js 15+
+            request.cookies.set({
+              name,
+              value,
+              ...options,
+            });
+          });
+          // Establecer cookies en la respuesta (para el cliente)
+          cookiesToSet.forEach(({ name, value, options }) => {
+            supabaseResponse.cookies.set({
+              name,
+              value,
+              ...options,
+            });
+          });
         },
       },
     }
   );
 
+  // Obtener la sesión
   const { data: { session } } = await supabase.auth.getSession();
 
+  console.log('🔍 Middleware - Sesión:', session ? '✅ Autenticado' : '❌ No autenticado');
+  console.log('🍪 Cookies en request:', request.cookies.getAll().map(c => c.name));
+
+  // Si no hay sesión, redirigir al login
   if (!session) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // Obtener el rol del usuario
   const { data: perfil, error } = await supabase
     .from('perfiles')
     .select('rol')
     .eq('user_id', session.user.id)
     .single();
 
+  console.log('👤 Rol del usuario:', perfil?.rol);
+
+  // Si no es jefe_ti, redirigir a /dashboard/usuario
   if (error || perfil?.rol !== 'jefe_ti') {
     return NextResponse.redirect(new URL('/dashboard/usuario', request.url));
   }
 
-  return NextResponse.next();
+  // Acceso permitido, devolvemos la respuesta con las cookies actualizadas
+  return supabaseResponse;
 }
 
 export const config = {
