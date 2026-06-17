@@ -76,7 +76,9 @@ export default function LoginPage() {
       if (perfilError) throw new Error(perfilError.message);
 
       // 4. Resetear contador de intentos (porque logró entrar)
-      await supabase.rpc('reset_login_attempts', { user_id: data.user.id });
+     // Después del login exitoso
+await supabase.rpc('reset_login_attempts', { user_id: data.user.id });
+console.log(' Contador de intentos reiniciado');
 
       // 5. Validación de roles
       if (perfil.rol !== role) {
