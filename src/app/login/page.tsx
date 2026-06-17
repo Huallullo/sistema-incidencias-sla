@@ -78,7 +78,7 @@ export default function LoginPage() {
      // 4. Resetear contador de intentos (porque logró entrar)
 console.log('🔃 Intentando resetear contador...');
 try {
-  await supabase.rpc('reset_login_attempts', { user_id: data.user.id });
+  await supabase.rpc('reset_login_attempts', { p_user_id: data.user.id });
   console.log(' Contador de intentos reiniciado');
 } catch (err) {
   console.error('Error al resetear contador:', err);
