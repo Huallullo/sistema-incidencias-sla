@@ -43,28 +43,38 @@ export default function RegisterUserPage() {
         throw new Error('No tienes sesión activa. Inicia sesión nuevamente.');
       }
  console.log('URL de Supabase:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+ console.log('📤 Enviando datos:', {
+  email,
+  password: 'Temporal123!',
+  nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
+  rol,
+  area: area.trim() || null,
+  telefono: telefono.trim() || null,
+  cargo: cargo.trim() || null,
+});
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/register-user`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            email,
-            password: 'Temporal123!',
-            nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
-            rol,
-            area: area.trim() || null,
-            telefono: telefono.trim() || null,
-            cargo: cargo.trim() || null,
-          }),
-        }
-      );
+  `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/register-user`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      email,
+      password: 'Temporal123!',
+      nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
+      rol,
+      area: area.trim() || null,
+      telefono: telefono.trim() || null,
+      cargo: cargo.trim() || null,
+    }),
+  }
+);
+const result = await response.json();
+console.log('📥 Respuesta:', result);
 
-      const result = await response.json();
-
+      
       if (!response.ok) {
         throw new Error(result.error || 'Error al registrar usuario');
       }
