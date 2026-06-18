@@ -1,4 +1,3 @@
-// @ts-nocheck
 // supabase/functions/register-user/index.ts
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
@@ -9,9 +8,22 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+// Tomar la URL y la clave de servicio desde variables de entorno para evitar
+// discrepancias entre local y deployment. Mantener el valor fijo como fallback
+// solo para facilitar desarrollo local si es necesario.
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || Deno.env.get('NEXT_PUBLIC_SUPABASE_URL') || 'https://dokdnmdqckwrlcfkuabt.supabase.co';
+const SERVICE_ROLE_KEY = Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_KEY') || '';
+
+if (!SERVICE_ROLE_KEY) {
+  console.error('Missing Supabase service role key in environment (MY_SUPABASE_SERVICE_ROLE_KEY)');
+}
+
+console.log('register-user: SUPABASE_URL=', SUPABASE_URL);
+console.log('register-user: SERVICE_ROLE_KEY present=', !!SERVICE_ROLE_KEY);
+
 const supabase = createClient(
-  Deno.env.get('MY_SUPABASE_URL')!,
-  Deno.env.get('MY_SUPABASE_SERVICE_ROLE_KEY')!
+  SUPABASE_URL,
+  SERVICE_ROLE_KEY
 );
 
 Deno.serve(async (req) => {
