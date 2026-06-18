@@ -43,8 +43,8 @@ export async function middleware(request: NextRequest) {
   // Obtener la sesión
   const { data: { session } } = await supabase.auth.getSession();
 
-  console.log('🔍 Middleware - Sesión:', session ? '✅ Autenticado' : '❌ No autenticado');
-  console.log('🍪 Cookies en request:', request.cookies.getAll().map(c => c.name));
+  console.log(' Middleware - Sesión:', session ? ' Autenticado' : 'No autenticado');
+  console.log(' Cookies en request:', request.cookies.getAll().map(c => c.name));
 
   // Si no hay sesión, redirigir al login
   if (!session) {

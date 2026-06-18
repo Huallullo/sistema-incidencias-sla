@@ -24,13 +24,13 @@ export default function RegisterUserPage() {
     setLoading(true);
 
     if (!nombre.trim() || !apellido.trim() || !email.trim() || !rol) {
-      setError('❌ Los campos Nombre, Apellido, Correo y Rol son obligatorios.');
+      setError(' Los campos Nombre, Apellido, Correo y Rol son obligatorios.');
       setLoading(false);
       return;
     }
 
     if (!email.includes('@') || !email.includes('.')) {
-      setError('❌ Ingresa un correo electrónico válido.');
+      setError(' Ingresa un correo electrónico válido.');
       setLoading(false);
       return;
     }
@@ -42,7 +42,7 @@ export default function RegisterUserPage() {
       if (!accessToken) {
         throw new Error('No tienes sesión activa. Inicia sesión nuevamente.');
       }
-
+ console.log('URL de Supabase:', process.env.NEXT_PUBLIC_SUPABASE_URL);
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/register-user`,
         {
