@@ -128,7 +128,7 @@ export class AuthService {
    */
   static async resetFailedLoginAttempts(email: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('reset_failed_login_attempts', {
+      const { error } = await supabase.rpc('reset_failed_login_attempts', {
         user_email: email,
       });
 
