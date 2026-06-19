@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/src/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function RegisterUserPage() {
   const [nombre, setNombre] = useState('');

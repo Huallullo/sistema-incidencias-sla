@@ -2,16 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/src/lib/supabaseClient';
 import { FaHeadphones } from 'react-icons/fa';
-
-// Definir el tipo para la respuesta de la función RPC
-type FailedLoginResult = {
-  blocked: boolean;
-  attempts: number;
-  blocked_until: string | null;
-  message: string;
-};
+import { AuthService } from '@/services/AuthService';
+import { UserRole } from '@/types/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -34,69 +27,54 @@ export default function LoginPage() {
 
     try {
       // 1. Intentar iniciar sesión
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const response = await AuthService.signIn({ email, password });
 
       // 2. Si hay error de autenticación (credenciales inválidas)
-      if (error) {
-        // Llamar a la función RPC para registrar el intento fallido
-        const { data: failData, error: failError } = await supabase.rpc(
-          'handle_failed_login',
-          { user_email: email }
-        );
+      if (response.error || !response.user) {
+        // Llamar al servicio de manejo de intentos fallidos
+        const failResult = await AuthService.handleFailedLogin(email);
 
-        if (failError) {
-  console.error(' Error RPC completo:', failError);
-  console.error(' Detalles del error:', failError.message, failError.details);
-  setError('Error al procesar la solicitud');
-} else {
-  console.log('✅ Respuesta RPC:', failData);
-          const result = failData as FailedLoginResult;
-          if (result?.blocked === true) {
-            const blockedUntil = new Date(result.blocked_until!);
-            const minutesLeft = Math.ceil((blockedUntil.getTime() - Date.now()) / 60000);
-            setError(`Cuenta bloqueada por 15 minutos. Reintenta en ${minutesLeft} minuto(s).`);
-          } else {
-            setError(` Credenciales incorrectas. ${result?.message || 'Intento fallido'}`);
-          }
+        if (failResult?.blocked === true) {
+          const blockedUntil = new Date(failResult.blocked_until!);
+          const minutesLeft = Math.ceil((blockedUntil.getTime() - Date.now()) / 60000);
+          setError(`Cuenta bloqueada por 15 minutos. Reintenta en ${minutesLeft} minuto(s).`);
+        } else {
+          setError(`Credenciales incorrectas. ${failResult?.message || 'Intento fallido'}`);
         }
-        setLoading(false);
-        return; // Detener el flujo
-      }
-
-      // 3. Login exitoso: obtener el rol
-      const { data: perfil, error: perfilError } = await supabase
-        .from('perfiles')
-        .select('rol')
-        .eq('user_id', data.user.id)
-        .single();
-
-      if (perfilError) throw new Error(perfilError.message);
-
-     // 4. Resetear contador de intentos (porque logró entrar)
-console.log('🔃 Intentando resetear contador...');
-try {
-  await supabase.rpc('reset_login_attempts', { p_user_id: data.user.id });
-  console.log(' Contador de intentos reiniciado');
-} catch (err) {
-  console.error('Error al resetear contador:', err);
-}
-
-      // 5. Validación de roles
-      if (perfil.rol !== role) {
-        const rolSeleccionado = roleLabels[role];
-        const rolReal = roleLabels[perfil.rol];
-        setError(`El rol seleccionado (${rolSeleccionado}) no coincide con el rol de la cuenta (${rolReal}).`);
         setLoading(false);
         return;
       }
 
+      // 3. Login exitoso: validar rol
+      if (!response.user.role) {
+        setError('No se pudo obtener el rol de usuario');
+        setLoading(false);
+        return;
+      }
+
+      // 4. Validación de roles seleccionados
+      if (response.user.role !== role) {
+        const rolSeleccionado = roleLabels[role as UserRole];
+        const rolReal = roleLabels[response.user.role];
+        setError(
+          `El rol seleccionado (${rolSeleccionado}) no coincide con el rol de la cuenta (${rolReal}).`
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 5. Resetear contador de intentos (porque logró entrar)
+      await AuthService.resetFailedLoginAttempts(email);
+
       // 6. Redirigir según rol
-      if (perfil.rol === 'jefe_ti') router.push('/dashboard/jefe');
-      else if (perfil.rol === 'tecnico') router.push('/dashboard/tecnico');
-      else router.push('/dashboard/usuario');
+      const dashboardRoutes: Record<UserRole, string> = {
+        jefe_ti: '/dashboard/jefe',
+        tecnico: '/dashboard/tecnico',
+        usuario: '/dashboard/usuario',
+      };
+
+      const route = dashboardRoutes[response.user.role];
+      router.push(route);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
       else setError('Error al iniciar sesión');
