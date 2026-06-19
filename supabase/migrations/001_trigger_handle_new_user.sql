@@ -160,10 +160,14 @@ COMMENT ON FUNCTION public.handle_new_user() IS
 -- -----------------------------------------------------------------------------
 -- PASO 3: Crear el Trigger en auth.users
 --
--- AFTER INSERT: se ejecuta después de que Auth confirma la inserción,
--- garantizando que el user_id ya existe antes de que el trigger lo use.
--- FOR EACH ROW: una ejecución por cada usuario creado.
+-- PROBLEMA: auth.users es propiedad de supabase_auth_admin, no de postgres.
+-- El SQL Editor corre como postgres → error 42501 (must be owner).
+-- SOLUCIÓN: cambiar temporalmente al rol supabase_auth_admin con SET ROLE.
 -- -----------------------------------------------------------------------------
+
+-- Cambiar al rol propietario de auth.users
+SET ROLE supabase_auth_admin;
+
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 CREATE TRIGGER on_auth_user_created
@@ -173,6 +177,9 @@ CREATE TRIGGER on_auth_user_created
 
 COMMENT ON TRIGGER on_auth_user_created ON auth.users IS
   'HU-002 / 2.3 — Dispara handle_new_user() cada vez que admin.createUser() crea un usuario.';
+
+-- Restaurar el rol original
+RESET ROLE;
 
 
 -- -----------------------------------------------------------------------------
