@@ -6,6 +6,8 @@ import { FaHeadphones } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { UserRole } from '@/types/auth';
 
+export const dynamic = 'force-dynamic';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
