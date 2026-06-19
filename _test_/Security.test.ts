@@ -15,8 +15,6 @@ jest.mock('../src/repositories/PerfilesRepository', () => ({
 
 import { AuthService } from '../src/services/AuthService';
 import { supabase } from '../src/lib/supabaseClient';
-import { PerfilesRepository } from '../src/repositories/PerfilesRepository';
-
 describe('Security - Bloqueo de cuenta', () => {
   beforeEach(() => {
     jest.clearAllMocks();
