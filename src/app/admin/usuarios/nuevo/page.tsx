@@ -2,7 +2,22 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+
+export const dynamic = 'force-dynamic';
+
+const TEMPORARY_PASSWORD = 'Temporal123!';
+
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey);
+}
 
 export default function RegisterUserPage() {
   const [nombre, setNombre] = useState('');
@@ -36,45 +51,42 @@ export default function RegisterUserPage() {
     }
 
     try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabase = getSupabaseClient();
+
+      if (!supabase || !supabaseUrl) {
+        throw new Error('Faltan las variables de entorno de Supabase. Configura NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+      }
+
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
       if (!accessToken) {
         throw new Error('No tienes sesión activa. Inicia sesión nuevamente.');
       }
- console.log('URL de Supabase:', process.env.NEXT_PUBLIC_SUPABASE_URL);
- console.log('📤 Enviando datos:', {
-  email,
-  password: 'Temporal123!',
-  nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
-  rol,
-  area: area.trim() || null,
-  telefono: telefono.trim() || null,
-  cargo: cargo.trim() || null,
-});
-      const response = await fetch(
-  `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/register-user`,
-  {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({
-      email,
-      password: 'Temporal123!',
-      nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
-      rol,
-      area: area.trim() || null,
-      telefono: telefono.trim() || null,
-      cargo: cargo.trim() || null,
-    }),
-  }
-);
-const result = await response.json();
-console.log('📥 Respuesta:', result);
 
-      
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/register-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            email,
+            password: TEMPORARY_PASSWORD,
+            nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
+            rol,
+            area: area.trim() || null,
+            telefono: telefono.trim() || null,
+            cargo: cargo.trim() || null,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
       if (!response.ok) {
         throw new Error(result.error || 'Error al registrar usuario');
       }
@@ -92,7 +104,6 @@ console.log('📥 Respuesta:', result);
         router.push('/admin/usuarios');
       }, 2000);
     } catch (err: unknown) {
-      console.error('Error en registro:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error al procesar la solicitud';
       setError(`❌ ${errorMessage}`);
     } finally {
