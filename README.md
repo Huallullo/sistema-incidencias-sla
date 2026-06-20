@@ -50,6 +50,25 @@ Según el rol obtenido (jefe_ti, tecnico o usuario), el sistema redirige al dash
 
 Seguridad: Tras 3 intentos fallidos consecutivos, la cuenta se bloquea temporalmente durante 15 minutos. El contador de intentos se reinicia al iniciar sesión exitosamente.
 
+## 🛡️ Políticas de Seguridad (RLS) — Tabla "perfiles"
+
+Para resguardar la integridad y confidencialidad de la información de los usuarios, se han configurado políticas estrictas de Seguridad a Nivel de Fila (RLS) en la tabla `public.perfiles`:
+
+1. **Lectura Restringida (SELECT)**:
+   - **Nombre de la política:** `perfiles_select_own`
+   - **Regla:** Cada usuario autenticado en el sistema (`authenticated`) solo puede visualizar su propio perfil.
+   - **Fórmula SQL:** `USING (user_id = auth.uid())`. Esto impide que técnicos o usuarios lean perfiles ajenos.
+
+2. **Inserción Bloqueada desde el Cliente (INSERT)**:
+   - **Regla:** **No existen políticas de inserción para usuarios normales** (ni `anon` ni `authenticated`).
+   - **Justificación:** Los usuarios no pueden crear, alterar o asignarse roles directamente llamando a la API cliente de Supabase. Esto evita escalación de privilegios no autorizada.
+
+3. **Acceso Administrativo Completo (ALL)**:
+   - **Nombre de la política:** `perfiles_service_role_all`
+   - **Regla:** El rol del sistema `service_role` posee permisos totales sobre la tabla (`SELECT`, `INSERT`, `UPDATE`, `DELETE`).
+   - **Fórmula SQL:** `USING (true) WITH CHECK (true)`.
+   - **Implementación:** La creación y asignación de perfiles se delega de forma segura a la **Edge Function backend (`register-user`)**, la cual ejecuta los inserts empleando la clave secreta de superusuario (`service_role_key`) desde un entorno seguro no expuesto al navegador.
+
 🌐 Despliegue en producción
 El proyecto está desplegado en Vercel y se actualiza automáticamente con cada push a la rama main.
 
