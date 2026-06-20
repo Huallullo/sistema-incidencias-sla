@@ -2,22 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { UsuariosService } from '@/services/UsuariosService';
 
 export const dynamic = 'force-dynamic';
-
-const TEMPORARY_PASSWORD = 'Temporal123!';
-
-function getSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return null;
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey);
-}
 
 export default function RegisterUserPage() {
   const [nombre, setNombre] = useState('');
@@ -51,43 +38,16 @@ export default function RegisterUserPage() {
     }
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabase = getSupabaseClient();
+      const result = await UsuariosService.registerUser({
+        email,
+        nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
+        rol,
+        area: area.trim() || null,
+        telefono: telefono.trim() || null,
+        cargo: cargo.trim() || null,
+      });
 
-      if (!supabase || !supabaseUrl) {
-        throw new Error('Faltan las variables de entorno de Supabase. Configura NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-      }
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-
-      if (!accessToken) {
-        throw new Error('No tienes sesión activa. Inicia sesión nuevamente.');
-      }
-
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/register-user`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            email,
-            password: TEMPORARY_PASSWORD,
-            nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
-            rol,
-            area: area.trim() || null,
-            telefono: telefono.trim() || null,
-            cargo: cargo.trim() || null,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || 'Error al registrar usuario');
       }
 
