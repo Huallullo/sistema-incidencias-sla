@@ -91,15 +91,24 @@ Deno.serve(async (req) => {
     // ── PASO 2: INSERT en public.perfiles ─────────────────────────────────────
     // Equivale al trigger on_auth_user_created en auth.users.
     // Corre con service_role, por lo que las políticas RLS no lo bloquean.
-    const { error: perfilError } = await supabase
+    // Verificar que el perfil no exista antes de insertar
+    const { data: existingPerfil } = await supabase
       .from('perfiles')
-      .insert({
-        user_id:          userId,
-        nombre_completo,
-        rol,
-        telefono_interno: telefono || null,
-        cargo:            cargo    || null,
-      });
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const { error: perfilError } = existingPerfil
+      ? { error: null }  // Ya existe, no insertar
+      : await supabase
+          .from('perfiles')
+          .insert({
+            user_id:          userId,
+            nombre_completo,
+            rol,
+            telefono_interno: telefono || null,
+            cargo:            cargo    || null,
+          });
 
     if (perfilError) {
       // Loguear pero no abortar: el usuario ya existe en Auth.
