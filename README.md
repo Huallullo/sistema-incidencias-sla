@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistema de Gestión de Incidencias con SLA
 
-## Getting Started
+Sistema web para la gestión de incidencias técnicas, con control de tiempos basado en Acuerdos de Nivel de Servicio (SLA). Desarrollado para la empresa Resinplast.
 
-First, run the development server:
+## 📋 Descripción
 
-```bash
+El sistema permite a los usuarios registrar incidencias, a los técnicos gestionar su cola de trabajo y a los jefes de TI supervisar el cumplimiento de los SLA. Incluye autenticación por roles (Jefe TI, Técnico, Usuario), bloqueo de cuenta por intentos fallidos y un dashboard personalizado.
+
+## 🛠️ Tecnologías
+
+- **Frontend:** Next.js 14 (App Router), React, TypeScript, Tailwind CSS
+- **Backend:** Supabase (Auth + PostgreSQL)
+- **Pruebas:** Jest, React Testing Library
+- **Despliegue:** Vercel
+- **CI/CD:** GitHub Actions
+
+## ⚙️ Variables de entorno
+
+Crea un archivo `.env.local` en la raíz del proyecto con las siguientes variables:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anon_de_supabase
+Nota: Reemplaza tu_url_de_supabase y tu_clave_anon_de_supabase con los valores reales de tu proyecto en Supabase (Settings → API).
+
+🚀 Ejecución local
+Clona el repositorio:
+
+bash
+git clone https://github.com/Huallullo/sistema-incidencias-sla.git
+cd sistema-incidencias-sla
+Instala las dependencias:
+
+bash
+npm install
+Ejecuta el servidor de desarrollo:
+
+bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Abre http://localhost:3000 para ver la aplicación.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+🔐 Flujo de autenticación (Login)
+El usuario ingresa su correo electrónico y contraseña en la pantalla de login.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+El sistema valida las credenciales contra el servicio de Supabase Auth.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Si las credenciales son correctas, se consulta el rol del usuario en la tabla perfiles.
 
-## Learn More
+Según el rol obtenido (jefe_ti, tecnico o usuario), el sistema redirige al dashboard correspondiente.
 
-To learn more about Next.js, take a look at the following resources:
+Seguridad: Tras 3 intentos fallidos consecutivos, la cuenta se bloquea temporalmente durante 15 minutos. El contador de intentos se reinicia al iniciar sesión exitosamente.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+🌐 Despliegue en producción
+El proyecto está desplegado en Vercel y se actualiza automáticamente con cada push a la rama main.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+🔗 URL de producción: https://sistema-incidencias-sla.vercel.app
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+🔄 Integración Continua (CI)
+Se utiliza GitHub Actions para ejecutar automáticamente las pruebas y la compilación en cada push o pull request sobre la rama main.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Node.js: Versión 24
+
+Comandos ejecutados:
+
+npm install (instalación de dependencias)
+
+npm test (ejecución de pruebas unitarias y de integración)
+
+npm run build (verificación de la compilación)
+
+El pipeline asegura que el código pase todas las pruebas y compile correctamente antes de ser desplegado en producción.
+
+📁 Estructura del proyecto (carpetas principales)
+text
+src/
+├── app/                 # Capa de presentación (páginas y componentes UI)
+│   ├── login/           # Pantalla de inicio de sesión
+│   ├── dashboard/       # Dashboards por rol (jefe, tecnico, usuario)
+│   └── admin/           # Módulos administrativos (ej. registro de usuarios)
+├── lib/                 # Capa de lógica de negocio y acceso a datos
+│   ├── services/        # Servicios (AuthService, UsuarioService)
+│   ├── repositories/    # Repositorios (PerfilesRepository)
+│   ├── supabaseClient.ts
+│   └── supabaseServer.ts
+├── __tests__/           # Pruebas unitarias y de integración
+└── middleware.ts        # Protección de rutas (middleware)
+
+📊 Estado de las pruebas
+Actualmente, las pruebas cubren el módulo de autenticación (HU-001), con 11 casos de prueba aprobados en 3 suites:
+
+AuthService.test.ts
+
+LoginPage.test.tsx
+
+Security.test.ts
+
+La cobertura de código del módulo de autenticación es del 92.34%.
+
+📝 Estándares de código
+Lenguaje: TypeScript (tipado estático).
+
+Formato: ESLint y Prettier para mantener la calidad y consistencia del código.
+
+Arquitectura: Multicapas (Presentación, Lógica de Negocio, Acceso a Datos) para facilitar la mantenibilidad y escalabilidad.
+
+Pruebas: Desarrollo guiado por pruebas (TDD) para el módulo de autenticación.
+
+📌 Siguientes pasos
+HU-002: Registro de nuevos usuarios (formulario, Edge Function y trigger en base de datos).
+
+HU-003 en adelante: Gestión de incidencias, asignación de técnicos, control de SLA y reportes.
+
+Desarrollado por: Huallullo Matos Abel Eduardo
+Curso: Integrador II – Ingeniería de Software
+Docente: Abal Mejía Jhonatan
