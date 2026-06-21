@@ -18,9 +18,22 @@ export interface GetUsersParams {
   limit?: number;   // Cantidad de registros por página
 }
 
+export interface PerfilUsuario {
+  id: string;
+  user_id: string;
+  nombre_completo: string;
+  rol: string;
+  correo: string | null;
+  estado: string;
+  cargo: string | null;
+  telefono_interno: string | null;
+  created_at: string;
+  intentos_fallidos?: number;
+}
+
 export interface GetUsersResult {
   success: boolean;
-  data?: any[];
+  data?: PerfilUsuario[];
   count?: number;
   error?: string;
 }

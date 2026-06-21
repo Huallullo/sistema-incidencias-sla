@@ -14,7 +14,7 @@ import {
   FaSpinner,
 } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
-import { UsuariosService } from '@/services/UsuariosService';
+import { UsuariosService, PerfilUsuario } from '@/services/UsuariosService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +31,7 @@ export default function GestionUsuariosPage() {
 
   // Estados de carga e interfaz
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<PerfilUsuario[]>([]);
   const [count, setCount] = useState(0);
 
   // Filtros y Paginación
