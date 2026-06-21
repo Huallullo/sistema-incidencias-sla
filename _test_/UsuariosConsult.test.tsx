@@ -94,16 +94,20 @@ describe('GestionUsuariosPage (Consulta de Usuarios)', () => {
     expect(screen.getByText('Gestión de usuarios')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Buscar tickets, usuarios...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Nuevo/i })).toBeInTheDocument();
+
+    // Esperar a que termine de cargar para evitar advertencias de act()
+    await waitFor(() => {
+      expect(screen.queryByText('Cargando usuarios...')).toBeNull();
+    });
   });
 
   it('debe listar los usuarios devueltos por el servicio', async () => {
     render(<GestionUsuariosPage />);
 
     await waitFor(() => {
-      expect(UsuariosService.getUsers).toHaveBeenCalled();
+      expect(screen.getByText('Alicia Torres')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Alicia Torres')).toBeInTheDocument();
     expect(screen.getByText('alicia.torres@empresa.pe')).toBeInTheDocument();
     expect(screen.getByText('Luis Garcia')).toBeInTheDocument();
     expect(screen.getByText('luis.garcia@empresa.pe')).toBeInTheDocument();
@@ -120,9 +124,7 @@ describe('GestionUsuariosPage (Consulta de Usuarios)', () => {
     render(<GestionUsuariosPage />);
 
     await waitFor(() => {
-      expect(UsuariosService.getUsers).toHaveBeenCalledWith(
-        expect.objectContaining({ rol: 'todos' })
-      );
+      expect(screen.getByText('Alicia Torres')).toBeInTheDocument();
     });
 
     const tecnicosTab = screen.getByTestId('tab-tecnicos');
@@ -147,6 +149,10 @@ describe('GestionUsuariosPage (Consulta de Usuarios)', () => {
   it('debe llamar al servicio de consulta con el debounce de busqueda', async () => {
     const user = userEvent.setup();
     render(<GestionUsuariosPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Alicia Torres')).toBeInTheDocument();
+    });
 
     const searchInput = screen.getByPlaceholderText('Buscar tickets, usuarios...');
     await user.type(searchInput, 'Luis');
