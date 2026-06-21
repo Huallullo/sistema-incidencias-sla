@@ -58,6 +58,8 @@ Para resguardar la integridad y confidencialidad de la información de los usuar
    - **Nombre de la política:** `perfiles_select_own`
    - **Regla:** Cada usuario autenticado en el sistema (`authenticated`) solo puede visualizar su propio perfil.
    - **Fórmula SQL:** `USING (user_id = auth.uid())`. Esto impide que técnicos o usuarios lean perfiles ajenos.
+   - **Nombre de la política (Administrador):** `perfiles_select_jefe_ti`
+   - **Regla:** Permite la lectura completa de todos los perfiles únicamente a usuarios con rol `jefe_ti`. Para evitar recursión infinita en PostgreSQL, la política utiliza la función `SECURITY DEFINER` llamada `public.es_jefe_ti()`.
 
 2. **Inserción Bloqueada desde el Cliente (INSERT)**:
    - **Regla:** **No existen políticas de inserción para usuarios normales** (ni `anon` ni `authenticated`).
@@ -106,15 +108,16 @@ src/
 └── middleware.ts        # Protección de rutas (middleware)
 
 📊 Estado de las pruebas
-Actualmente, las pruebas cubren el módulo de autenticación (HU-001), con 11 casos de prueba aprobados en 3 suites:
+Actualmente, las pruebas cubren los módulos de autenticación (HU-001), registro de usuarios (HU-002) y consulta de usuarios (HU-003), con 33 casos de prueba aprobados en 8 suites:
 
-AuthService.test.ts
-
-LoginPage.test.tsx
-
-Security.test.ts
-
-La cobertura de código del módulo de autenticación es del 92.34%.
+- `Security.test.ts` (Validación de seguridad de contraseñas)
+- `AuthService.test.ts` (Lógica de autenticación Supabase)
+- `Middleware.test.ts` (Protección perimetral de rutas por rol)
+- `PasswordGenerator.test.ts` (Generador de contraseñas de invitación)
+- `UsuariosService.test.ts` (Backend de registro de cuentas)
+- `UsuariosConsult.test.tsx` (Frontend y lógica de consulta de usuarios)
+- `LoginPage.test.tsx` (UI del portal de login)
+- `RegisterUserPage.test.tsx` (UI del formulario de registro)
 
 📝 Estándares de código
 Lenguaje: TypeScript (tipado estático).
@@ -133,3 +136,50 @@ HU-003 en adelante: Gestión de incidencias, asignación de técnicos, control d
 Desarrollado por: Huallullo Matos Abel Eduardo
 Curso: Integrador II – Ingeniería de Software
 Docente: Abal Mejía Jhonatan
+
+---
+
+## 👥 Servicio de Usuarios — Consumo de la API (`UsuariosService.getUsers`)
+
+El módulo de consulta expone el servicio `UsuariosService` en `src/services/UsuariosService.ts` que permite buscar, filtrar y paginar los perfiles de la base de datos de Supabase.
+
+### Método `getUsers(params)`
+Obtiene una lista paginada de perfiles de usuario aplicando filtros.
+
+| Parámetro | Tipo | Descripción | Ejemplo |
+|---|---|---|---|
+| `search` | `string` | Texto para búsqueda parcial (ilike) sobre nombre completo o correo. | `"Alicia"` |
+| `rol` | `string` | Filtro por rol exacto (`'jefe_ti'`, `'tecnico'`, `'usuario'`, o `'todos'`). | `'tecnico'` |
+| `page` | `number` | Número de página actual (1-indexed). Por defecto es `1`. | `1` |
+| `limit` | `number` | Cantidad de registros devueltos por página. Por defecto es `10`. | `8` |
+
+### Estructura de Retorno (`GetUsersResult`)
+```typescript
+interface GetUsersResult {
+  success: boolean;       // Indica si la consulta fue exitosa
+  data?: PerfilUsuario[]; // Listado de perfiles recuperados
+  count?: number;         // Cantidad total absoluta que coinciden con los filtros (para paginador)
+  error?: string;         // Mensaje de error en caso de fallo
+}
+```
+
+### Ejemplo de Consumo en React / Next.js
+```typescript
+import { UsuariosService } from '@/services/UsuariosService';
+
+async function cargarListado() {
+  const resultado = await UsuariosService.getUsers({
+    search: 'Gomez',
+    rol: 'todos',
+    page: 1,
+    limit: 10
+  });
+
+  if (resultado.success && resultado.data) {
+    console.log('Listado de usuarios:', resultado.data);
+    console.log('Total registros:', resultado.count);
+  } else {
+    console.error('Error al cargar:', resultado.error);
+  }
+}
+```
