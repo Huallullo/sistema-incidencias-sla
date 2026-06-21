@@ -108,6 +108,8 @@ Deno.serve(async (req) => {
             rol,
             telefono_interno: telefono || null,
             cargo:            cargo    || null,
+            correo:           userEmail,
+            estado:           'activo',
           });
 
     if (perfilError) {
