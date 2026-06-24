@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FaHeadphones,
-  FaBell,
   FaSignOutAlt,
   FaSpinner,
 } from 'react-icons/fa';

@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FaHeadphones,
   FaBell,
   FaSearch,
   FaPlus,
   FaEdit,
-  FaSignOutAlt,
   FaChevronLeft,
   FaChevronRight,
   FaSpinner,
@@ -22,13 +20,6 @@ export const dynamic = 'force-dynamic';
 
 export default function GestionUsuariosPage() {
   const router = useRouter();
-
-  // Estados de sesión
-  const [currentUser, setCurrentUser] = useState<{
-    nombre_completo: string;
-    correo: string;
-    rol: string;
-  } | null>(null);
 
   // Estados de carga e interfaz
   const [loading, setLoading] = useState(true);
@@ -76,12 +67,6 @@ export default function GestionUsuariosPage() {
           router.push('/dashboard');
           return;
         }
-
-        setCurrentUser({
-          nombre_completo: profile.nombre_completo || 'Jefe de TI',
-          correo: profile.correo || session.user.email || '',
-          rol: profile.rol,
-        });
       } catch (err) {
         console.error('Error cargando sesión:', err);
         router.push('/login');
@@ -118,11 +103,6 @@ export default function GestionUsuariosPage() {
 
     fetchUsuarios();
   }, [debouncedSearch, activeTab, currentPage]);
-
-  const handleLogout = async () => {
-    await AuthService.signOut();
-    router.push('/login');
-  };
 
   // Helper para generar iniciales
   const getInitials = (name: string) => {
