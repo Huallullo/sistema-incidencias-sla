@@ -28,6 +28,15 @@ jest.mock('../src/lib/supabaseClient', () => {
 
 describe('HU-004: Pruebas Unitarias de Perfil de Usuario', () => {
   const mockFrom = (supabase.from as jest.Mock)();
+  let consoleErrorSpy: jest.SpyInstance;
+
+  beforeAll(() => {
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
