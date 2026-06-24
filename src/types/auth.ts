@@ -32,6 +32,21 @@ export interface UserProfile {
   email?: string;
 }
 
+export interface PerfilUsuario {
+  id: string;
+  user_id: string;
+  nombre_completo: string;
+  rol: UserRole;
+  intentos_fallidos: number;
+  bloqueado_hasta: string | null;
+  created_at: string;
+  telefono_interno: string | null;
+  cargo: string | null;
+  correo: string | null;
+  estado: string;
+}
+
+
 export interface FailedLoginResult {
   blocked: boolean;
   attempts: number;

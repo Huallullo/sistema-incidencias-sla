@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
-import { UserRole } from '@/types/auth';
+import { UserRole, PerfilUsuario } from '@/types/auth';
 
 /**
  * PerfilesRepository - Acceso a datos de perfiles de usuarios
@@ -78,4 +78,38 @@ export class PerfilesRepository {
       return null;
     }
   }
+
+  /**
+   * Actualiza el perfil de un usuario
+   */
+  static async updateProfile(
+    userId: string,
+    profileData: {
+      nombre_completo?: string;
+      telefono_interno?: string;
+      cargo?: string;
+      correo?: string;
+    }
+  ): Promise<{ success: boolean; data?: PerfilUsuario; error?: string }> {
+    try {
+      const { data, error } = await supabase
+        .from('perfiles')
+        .update(profileData)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data };
+    } catch (err) {
+      console.error('Exception in updateProfile:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      return { success: false, error: errorMessage };
+    }
+  }
 }
+
