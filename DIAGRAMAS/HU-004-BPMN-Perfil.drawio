@@ -1,0 +1,211 @@
+<mxfile host="app.diagrams.net" version="21.0.0">
+  <diagram name="HU-004 Actualización de Perfil" id="hu04_perfil">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TÍTULO -->
+        <mxCell id="titulo" value="HU-004 (PARTE 1) — PROCESO DE ACTUALIZACIÓN DE PERFIL Y CLAVE (SESIÓN ACTIVA)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="300" y="3" width="1100" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- FONDOS DE CARRILES -->
+        <mxCell id="bg_u" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;opacity=40;pointerEvents=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="45" width="1800" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="bg_f" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;opacity=40;pointerEvents=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="165" width="1800" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="bg_b" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;opacity=40;pointerEvents=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="295" width="1800" height="145" as="geometry" />
+        </mxCell>
+        <mxCell id="bg_s" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=40;pointerEvents=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="440" width="1800" height="135" as="geometry" />
+        </mxCell>
+
+        <!-- Borde del pool -->
+        <mxCell id="pool_borde" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#333333;strokeWidth=3;pointerEvents=0;" vertex="1" parent="1">
+          <mxGeometry x="50" y="45" width="1800" height="530" as="geometry" />
+        </mxCell>
+
+        <!-- ETIQUETAS DE CARRILES -->
+        <mxCell id="lbl_u" value="👤 Usuario / Técnico / Jefe" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;rounded=1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="55" y="85" width="135" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_f" value="🖥️ Frontend&#xa;React / Next.js Vista Perfil" style="text;html=1;strokeColor=#d6b656;fillColor=#ffe6cc;align=center;verticalAlign=middle;rounded=1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="55" y="210" width="135" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_b" value="⚙️ Backend&#xa;UsuariosService &amp; Auth" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=center;verticalAlign=middle;rounded=1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="55" y="347" width="135" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_s" value="🗄️ Base de Datos&#xa;Supabase RLS &amp; Trigger" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;verticalAlign=middle;rounded=1;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="55" y="487" width="135" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ELEMENTOS FLUJO PERFIL -->
+        <mxCell id="start_a" value="Inicio Perfil" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="220" y="80" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_accede_perfil" value="Ingresar a&#xa;/dashboard/perfil" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="310" y="72" width="140" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_cargar_datos" value="Solicitar perfil y&#xa;prellenar campos" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#ffe6cc;strokeColor=#d6b656;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="310" y="197" width="140" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db_select_profile" value="SELECT FROM perfiles&#xa;(RLS user_id = auth.uid())" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="305" y="465" width="150" height="85" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gw_accion" value="¿Qué desea&#xa;actualizar?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="60" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- RAMA EDICION DE DATOS -->
+        <mxCell id="t_mod_datos" value="Modificar Nombre,&#xa;Teléfono o Cargo" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="690" y="72" width="145" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_valida_dup" value="updateProfileData()&#xa;Validar duplicidad email" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="685" y="335" width="155" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gw_dup" value="¿Email ya&#xa;existe?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="890" y="322" width="110" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_err_dup" value="⚠️ Alerta: El correo ya&#xa;se encuentra registrado" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="872" y="197" width="145" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db_update_profile" value="UPDATE public.perfiles&#xa;Dispara trigger de historial" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1070" y="465" width="160" height="85" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_exito_datos" value="🎉 Alerta: Datos de perfil&#xa;actualizados exitosamente" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1075" y="197" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="end_datos" value="Datos&#xa;Guardados" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1125" y="80" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- RAMA CAMBIO DE CONTRASEÑA -->
+        <mxCell id="t_mod_pass" value="Modificar contraseña&#xa;(actual, nueva y conf)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="72" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_valida_pass" value="Re-autenticar con&#xa;contraseña actual" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="335" width="145" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gw_pass_act" value="¿Clave actual&#xa;es válida?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="322" width="110" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_err_pass_act" value="⚠️ Alerta: Contraseña&#xa;actual incorrecta" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1485" y="197" width="140" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_update_auth_pass" value="updateUser(password)&#xa;en Supabase Auth" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1670" y="335" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t_exito_pass" value="🎉 Alerta: Contraseña&#xa;actualizada exitosamente" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1670" y="197" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="end_pass" value="Clave&#xa;Cambiada" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=3;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="80" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- CONEXIONES -->
+        <mxCell id="ae01" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="start_a" target="t_accede_perfil" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae02" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" source="t_accede_perfil" target="t_cargar_datos" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae03" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" source="t_cargar_datos" target="db_select_profile" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae04" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="t_cargar_datos" target="gw_accion" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="230"/>
+              <mxPoint x="480" y="105"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- gw_accion → t_mod_datos -->
+        <mxCell id="ae05" value="Editar Datos" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="gw_accion" target="t_mod_datos" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae06" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" source="t_mod_datos" target="t_valida_dup" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae07" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="t_valida_dup" target="gw_dup" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- gw_dup → t_err_dup (SÍ, duplicado) -->
+        <mxCell id="ae_dup_si" value="Duplicado ❌" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#b85450;fontColor=#b85450;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" source="gw_dup" target="t_err_dup" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- gw_dup → db_update_profile (NO, único) -->
+        <mxCell id="ae_dup_no" value="Único ✅" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#82b366;fontColor=#82b366;exitX=1;exitY=0.5;entryX=0.5;entryY=0;" edge="1" source="gw_dup" target="db_update_profile" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1150" y="367"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ae08" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" source="db_update_profile" target="t_exito_datos" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae08_end" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" source="t_exito_datos" target="end_datos" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- gw_accion → t_mod_pass -->
+        <mxCell id="ae09" value="Cambiar Clave" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=1;entryX=0;entryY=0.5;" edge="1" source="gw_accion" target="t_mod_pass" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="150"/>
+              <mxPoint x="1270" y="150"/>
+              <mxPoint x="1270" y="105"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ae10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" source="t_mod_pass" target="t_valida_pass" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="t_valida_pass" target="gw_pass_act" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- gw_pass_act → t_err_pass_act (NO válida) -->
+        <mxCell id="ae_pass_no" value="Inválida ❌" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#b85450;fontColor=#b85450;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" source="gw_pass_act" target="t_err_pass_act" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- gw_pass_act → t_update_auth_pass (SÍ válida) -->
+        <mxCell id="ae_pass_si" value="Válida ✅" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;strokeColor=#82b366;fontColor=#82b366;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="gw_pass_act" target="t_update_auth_pass" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" source="t_update_auth_pass" target="t_exito_pass" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ae12_end" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeWidth=2;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" source="t_exito_pass" target="end_pass" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

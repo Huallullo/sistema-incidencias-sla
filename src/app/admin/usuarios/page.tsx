@@ -16,6 +16,7 @@ import {
 import { AuthService } from '@/services/AuthService';
 import { UsuariosService, PerfilUsuario } from '@/services/UsuariosService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
+import { PerfilUsuario } from '@/types/auth';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { generateTemporaryPassword } from '@/utils/security';
+import { PerfilUsuario } from '@/types/auth';
+import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 
 export interface RegisterUserParams {
   email: string;
@@ -156,7 +158,7 @@ export class UsuariosService {
 
       return {
         success: true,
-        data: data || [],
+        data: (data || []) as PerfilUsuario[],
         count: count || 0,
       };
     } catch (err) {
@@ -167,5 +169,115 @@ export class UsuariosService {
       };
     }
   }
+
+  /**
+   * Actualiza los datos de perfil de un usuario, validando duplicidad de correo
+   */
+  static async updateProfileData(
+    userId: string,
+    profileData: {
+      nombre_completo?: string;
+      telefono_interno?: string;
+      cargo?: string;
+      correo?: string;
+    }
+  ): Promise<{ success: boolean; data?: PerfilUsuario; error?: string }> {
+    try {
+      // Validar duplicidad de correo si se está intentando cambiar
+      if (profileData.correo) {
+        const { data: existing, error: checkError } = await supabase
+          .from('perfiles')
+          .select('user_id')
+          .eq('correo', profileData.correo)
+          .neq('user_id', userId)
+          .maybeSingle();
+
+        if (checkError) {
+          return { success: false, error: checkError.message };
+        }
+        if (existing) {
+          return {
+            success: false,
+            error: 'El correo electrónico ya se encuentra registrado por otro usuario',
+          };
+        }
+      }
+
+      // Llamar al repositorio para realizar la actualización
+      return await PerfilesRepository.updateProfile(userId, profileData);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar el perfil';
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Envía un correo de recuperación de contraseña autónoma
+   */
+  static async sendPasswordReset(
+    email: string,
+    redirectTo: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Validar primero si el correo existe en perfiles
+      const { data: userProfile, error: profileError } = await supabase
+        .from('perfiles')
+        .select('user_id')
+        .eq('correo', email)
+        .maybeSingle();
+
+      if (profileError) {
+        return { success: false, error: profileError.message };
+      }
+      if (!userProfile) {
+        return {
+          success: false,
+          error: 'El correo electrónico ingresado no se encuentra registrado en el sistema',
+        };
+      }
+
+      // Enviar correo de restablecimiento de contraseña de Supabase
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al solicitar el enlace de recuperación';
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Actualiza la contraseña en Supabase Auth
+   */
+  static async updateUserPassword(password: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al restablecer la contraseña';
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
 }
+
 
