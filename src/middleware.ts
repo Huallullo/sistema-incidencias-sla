@@ -60,9 +60,9 @@ export async function middleware(request: NextRequest) {
 
   console.log('👤 Rol del usuario:', perfil?.rol);
 
-  // Si no es jefe_ti, redirigir a /dashboard/usuario
+  // Si no es jefe_ti, redirigir a /dashboard
   if (error || perfil?.rol !== 'jefe_ti') {
-    return NextResponse.redirect(new URL('/dashboard/usuario', request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // Acceso permitido, devolvemos la respuesta con las cookies actualizadas

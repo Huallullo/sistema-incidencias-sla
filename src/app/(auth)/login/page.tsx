@@ -68,15 +68,8 @@ export default function LoginPage() {
       // 5. Resetear contador de intentos (porque logró entrar)
       await AuthService.resetFailedLoginAttempts(email);
 
-      // 6. Redirigir según rol
-      const dashboardRoutes: Record<UserRole, string> = {
-        jefe_ti: '/dashboard/jefe',
-        tecnico: '/dashboard/tecnico',
-        usuario: '/dashboard/usuario',
-      };
-
-      const route = dashboardRoutes[response.user.role];
-      router.push(route);
+      // 6. Redirigir al dashboard único
+      router.push('/dashboard');
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
       else setError('Error al iniciar sesión');
@@ -154,9 +147,13 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-5 text-center">
-          <a href="#" className="text-sm text-[#2563eb] hover:underline">
+          <button
+            type="button"
+            onClick={() => router.push('/recuperar')}
+            className="text-sm text-[#2563eb] hover:underline bg-transparent border-none cursor-pointer"
+          >
             ¿Olvidaste tu contraseña?
-          </a>
+          </button>
         </div>
       </div>
     </div>

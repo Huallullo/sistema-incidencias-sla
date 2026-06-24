@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import RegisterUserPage from '../src/app/admin/usuarios/nuevo/page';
+import RegisterUserPage from '../src/app/(dashboard)/admin/usuarios/nuevo/page';
 import { useRouter } from 'next/navigation';
 import { UsuariosService } from '../src/services/UsuariosService';
 

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import GestionUsuariosPage from '../src/app/admin/usuarios/page';
+import GestionUsuariosPage from '../src/app/(dashboard)/admin/usuarios/page';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '../src/services/AuthService';
 import { UsuariosService } from '../src/services/UsuariosService';
@@ -184,7 +184,7 @@ describe('GestionUsuariosPage (Consulta de Usuarios)', () => {
     render(<GestionUsuariosPage />);
 
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard/usuario');
+      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard');
     });
   });
 });

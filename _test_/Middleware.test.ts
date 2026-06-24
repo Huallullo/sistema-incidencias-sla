@@ -82,7 +82,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     );
   });
 
-  it('debe redirigir a /dashboard/usuario si la sesión es activa pero el rol no es jefe_ti', async () => {
+  it('debe redirigir a /dashboard si la sesión es activa pero el rol no es jefe_ti', async () => {
     mockGetSession.mockResolvedValue({
       data: {
         session: {
@@ -104,13 +104,13 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     expect(mockEq).toHaveBeenCalledWith('user_id', 'user-id-tecnico');
     expect(NextResponse.redirect).toHaveBeenCalledWith(
       expect.objectContaining({
-        pathname: '/dashboard/usuario',
+        pathname: '/dashboard',
       })
     );
     expect(response).toEqual(
       expect.objectContaining({
         type: 'redirect',
-        url: expect.stringContaining('/dashboard/usuario'),
+        url: expect.stringContaining('/dashboard'),
       })
     );
   });

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import LoginPage from '../src/app/login/page';
+import LoginPage from '../src/app/(auth)/login/page';
 import { useRouter } from 'next/navigation';
 import { AuthService } from '../src/services/AuthService';
 
@@ -65,7 +65,7 @@ describe('LoginPage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard/jefe');
+      expect(mockRouter.push).toHaveBeenCalledWith('/dashboard');
     });
   });
 
