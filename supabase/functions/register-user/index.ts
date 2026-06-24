@@ -44,29 +44,35 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password, nombre_completo, rol, area, telefono, cargo } = await req.json();
+    const { email, nombre_completo, rol, area, telefono, cargo } = await req.json();
 
-    // ── Validación de campos obligatorios ─────────────────────────────────────
-    if (!email || !password || !nombre_completo || !rol) {
+    // ── Validación de campos obligatorios (sin password ya que se define en la invitación) ──────────────────────
+    if (!email || !nombre_completo || !rol) {
       return new Response(
-        JSON.stringify({ error: 'Faltan campos obligatorios (email, password, nombre_completo, rol)' }),
+        JSON.stringify({ error: 'Faltan campos obligatorios (email, nombre_completo, rol)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // ── PASO 1: Crear usuario en Supabase Auth ────────────────────────────────
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Para el flujo de invitación (Opción B)
+    // El enlace de invitación redirigirá a la pantalla de reset-password
+    const requestOrigin = req.headers.get('origin') || 'https://sistema-incidencias-sla.vercel.app';
+    const redirectTo = `${requestOrigin}/reset-password`;
+
+    // ── PASO 1: Crear e invitar usuario en Supabase Auth ──────────────────────
+    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(
       email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        nombre_completo,
-        rol,
-        area:     area     || null,
-        telefono: telefono || null,
-        cargo:    cargo    || null,
-      },
-    });
+      {
+        redirectTo,
+        data: {
+          nombre_completo,
+          rol,
+          area:     area     || null,
+          telefono: telefono || null,
+          cargo:    cargo    || null,
+        },
+      }
+    );
 
     if (authError) {
       // Email duplicado (CA-2 HU-002)
@@ -113,26 +119,22 @@ Deno.serve(async (req) => {
           });
 
     if (perfilError) {
-      // Loguear pero no abortar: el usuario ya existe en Auth.
-      // El perfil se puede insertar manualmente si es necesario.
       console.error('[register-user] Error insertando perfil:', perfilError.message);
     }
 
     // ── PASO 3: Mock de correo → INSERT en email_logs ─────────────────────────
-    // Simula el envío automático de instrucciones de acceso (CA-3 HU-002).
+    // Simula e historiza el envío de invitación para control interno.
     const cuerpoCorreo = [
       `Hola ${nombre_completo},`,
       '',
       'Tu cuenta ha sido creada en el Sistema de Incidencias SLA.',
       '',
-      'Datos de acceso:',
-      `  • Email             : ${userEmail}`,
-      `  • Contraseña temp.  : Temporal123!`,
-      `  • Rol asignado      : ${rol}`,
+      'Para activar tu cuenta y configurar tu contraseña de acceso, por favor ingresa al siguiente enlace:',
+      `👉 ${redirectTo}`,
       '',
-      'Ingresa en: https://sistema-incidencias-sla.vercel.app/login',
+      `Rol asignado: ${rol}`,
       '',
-      'Por seguridad, cambia tu contraseña en el primer inicio de sesión.',
+      'Este enlace de invitación es de un único uso.',
       '',
       'Saludos,',
       'Jefe de TI — Sistema de Incidencias SLA',
@@ -143,7 +145,7 @@ Deno.serve(async (req) => {
       .insert({
         user_id:       userId,
         email_destino: userEmail,
-        asunto:        'Bienvenido al Sistema de Incidencias SLA — Instrucciones de acceso',
+        asunto:        'Bienvenido al Sistema de Incidencias SLA — Activación de cuenta',
         cuerpo:        cuerpoCorreo,
         estado:        'pendiente',
       });
