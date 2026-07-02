@@ -1,4 +1,4 @@
-import { middleware } from '../src/middleware';
+import { proxy } from '../src/proxy';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
@@ -67,7 +67,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     });
 
     const request = createMockRequest('/admin/usuarios/nuevo');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(NextResponse.redirect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -98,7 +98,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     });
 
     const request = createMockRequest('/admin/usuarios/nuevo');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(mockFrom).toHaveBeenCalledWith('perfiles');
     expect(mockEq).toHaveBeenCalledWith('id_auth_supabase', 'user-id-tecnico');
@@ -131,7 +131,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     });
 
     const request = createMockRequest('/admin/usuarios/nuevo');
-    const response = await middleware(request);
+    const response = await proxy(request);
 
     expect(mockFrom).toHaveBeenCalledWith('perfiles');
     expect(mockEq).toHaveBeenCalledWith('id_auth_supabase', 'user-id-jefe');

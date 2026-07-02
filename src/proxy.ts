@@ -2,7 +2,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Creamos la respuesta base
   const supabaseResponse = NextResponse.next({
     request,
