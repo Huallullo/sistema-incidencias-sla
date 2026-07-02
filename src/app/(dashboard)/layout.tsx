@@ -3,10 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
-  FaHeadphones,
-  FaSignOutAlt,
-  FaSpinner,
-} from 'react-icons/fa';
+  LuLayoutGrid,
+  LuTicket,
+  LuUsers,
+  LuMonitor,
+  LuHistory,
+  LuCalendarClock,
+  LuStar,
+  LuChartColumn,
+  LuLibrary,
+  LuCircleUser,
+  LuLogOut,
+} from 'react-icons/lu';
+import { FaHeadphones, FaSpinner } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
@@ -82,7 +91,8 @@ export default function DashboardLayout({
 
     if (rol === 'jefe_ti') {
       return (
-        <>
+        <div className="space-y-6">
+          {/* SECCIÓN: PRINCIPAL */}
           <div>
             <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
               Principal
@@ -91,32 +101,33 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium ${
-                    pathname === '/dashboard'
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                    pathname === '/dashboard' || pathname === '/admin/dashboard'
                       ? 'bg-blue-50 text-blue-600 font-bold'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  Dashboard
+                  <LuLayoutGrid className="text-lg shrink-0" />
+                  <span>Dashboard</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => router.push('/dashboard/tickets')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium flex items-center justify-between ${
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname === '/dashboard/tickets'
                       ? 'bg-blue-50 text-blue-600 font-bold'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
+                  <LuTicket className="text-lg shrink-0" />
                   <span>Tickets</span>
-                  <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
-                    5
-                  </span>
                 </button>
               </li>
             </ul>
           </div>
+
+          {/* SECCIÓN: GESTIÓN */}
           <div>
             <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
               Gestión
@@ -125,37 +136,86 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/admin/usuarios')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium ${
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname?.startsWith('/admin/usuarios')
                       ? 'bg-blue-50 text-blue-600 font-bold'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  Usuarios
+                  <LuUsers className="text-lg shrink-0" />
+                  <span>Usuario</span>
                 </button>
               </li>
               <li>
-                <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium">
-                  Equipos
+                <button 
+                  onClick={() => alert('Gestión de Equipos en desarrollo')}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                >
+                  <LuMonitor className="text-lg shrink-0" />
+                  <span>Equipos</span>
                 </button>
               </li>
               <li>
-                <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium">
-                  Prioridades SLA
+                <button 
+                  onClick={() => alert('Configuración de Prioridades SLA en desarrollo')}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                >
+                  <LuHistory className="text-lg shrink-0" />
+                  <span>Prioridades SLA</span>
                 </button>
               </li>
               <li>
-                <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium">
-                  Disponibilidad
+                <button 
+                  onClick={() => alert('Disponibilidad de Técnicos en desarrollo')}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                >
+                  <LuCalendarClock className="text-lg shrink-0" />
+                  <span>Disponibilidad</span>
                 </button>
               </li>
             </ul>
           </div>
-        </>
+
+          {/* SECCIÓN: CALIDAD */}
+          <div>
+            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+              Calidad
+            </p>
+            <ul className="space-y-1">
+              <li>
+                <button
+                  onClick={() => alert('Evaluaciones de Servicio en desarrollo')}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                >
+                  <LuStar className="text-lg shrink-0" />
+                  <span>Evaluaciones</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => alert('Reporte de calidad en desarrollo')}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                >
+                  <LuChartColumn className="text-lg shrink-0" />
+                  <span>Reporte</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => alert('Base de conocimiento en desarrollo')}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                >
+                  <LuLibrary className="text-lg shrink-0" />
+                  <span>Base de conocimiento</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
       );
     } else if (rol === 'tecnico') {
       return (
-        <>
+        <div className="space-y-6">
           <div>
             <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
               Panel Técnico
@@ -164,42 +224,45 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium ${
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname === '/dashboard'
                       ? 'bg-blue-50 text-blue-600 font-bold'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  Dashboard Técnico
+                  <LuLayoutGrid className="text-lg shrink-0" />
+                  <span>Dashboard Técnico</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => router.push('/dashboard/tickets')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium flex items-center justify-between ${
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname === '/dashboard/tickets'
                       ? 'bg-blue-50 text-blue-600 font-bold'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
+                  <LuTicket className="text-lg shrink-0" />
                   <span>Mis Incidencias</span>
-                  <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
-                    2
-                  </span>
                 </button>
               </li>
               <li>
-                <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium">
-                  Disponibilidad
+                <button 
+                  onClick={() => alert('Disponibilidad de Horarios en desarrollo')}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                >
+                  <LuCalendarClock className="text-lg shrink-0" />
+                  <span>Disponibilidad</span>
                 </button>
               </li>
             </ul>
           </div>
-        </>
+        </div>
       );
     } else {
       return (
-        <>
+        <div className="space-y-6">
           <div>
             <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
               Panel Usuario
@@ -208,30 +271,34 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium ${
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname === '/dashboard'
                       ? 'bg-blue-50 text-blue-600 font-bold'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  Dashboard Usuario
+                  <LuLayoutGrid className="text-lg shrink-0" />
+                  <span>Dashboard Usuario</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => router.push('/dashboard/tickets')}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium flex items-center justify-between ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname === '/dashboard/tickets'
                       ? 'bg-blue-50 text-blue-600 font-bold'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <span>Mis Reportes</span>
+                  <div className="flex items-center gap-3">
+                    <LuTicket className="text-lg shrink-0" />
+                    <span>Mis Reportes</span>
+                  </div>
                 </button>
               </li>
             </ul>
           </div>
-        </>
+        </div>
       );
     }
   };
@@ -249,17 +316,17 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc] text-slate-800">
-      {/* ── SIDEBAR LATERAL CENTRALIZADO ─────────────────────────────────── */}
+      {/* ── SIDEBAR LATERAL CENTRALIZADO (FIGMA) ─────────────────────────── */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0">
         <div>
           {/* Logo y Encabezado de Sidebar */}
           <div className="p-6 border-b border-slate-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl shrink-0">
                 <FaHeadphones />
               </div>
-              <div>
-                <h2 className="font-bold text-slate-800 tracking-tight text-base leading-tight">
+              <div className="min-w-0">
+                <h2 className="font-bold text-slate-800 tracking-tight text-base leading-tight truncate">
                   Help Desk TI
                 </h2>
                 <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600">
@@ -273,6 +340,7 @@ export default function DashboardLayout({
           <nav className="p-4 space-y-6">
             {renderSidebarLinks()}
 
+            {/* SECCIÓN: CUENTA */}
             <div>
               <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
                 Cuenta
@@ -281,9 +349,14 @@ export default function DashboardLayout({
                 <li>
                   <button
                     onClick={() => router.push('/perfil')}
-                    className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium"
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname === '/perfil'
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
                   >
-                    Mi perfil
+                    <LuCircleUser className="text-lg shrink-0" />
+                    <span>Mi perfil</span>
                   </button>
                 </li>
               </ul>
@@ -291,10 +364,10 @@ export default function DashboardLayout({
           </nav>
         </div>
 
-        {/* Sección de perfil inferior */}
+        {/* Sección de perfil inferior (Figma exacto) */}
         <div className="p-4 border-t border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+            <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm shrink-0">
               {currentUser ? getInitials(currentUser.nombre_completo) : 'U'}
             </div>
             <div className="overflow-hidden">
@@ -306,11 +379,12 @@ export default function DashboardLayout({
               </p>
             </div>
           </div>
+          
           <button
             onClick={handleLogout}
-            className="w-full border border-slate-200 text-slate-600 py-2 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition text-xs font-semibold flex items-center justify-center gap-2 bg-white"
+            className="w-full border border-slate-200 text-slate-700 py-2.5 rounded-xl hover:bg-slate-100 transition text-xs font-bold flex items-center justify-center gap-2 bg-white shadow-sm"
           >
-            <FaSignOutAlt />
+            <LuLogOut className="text-base shrink-0" />
             Cerrar Sesión
           </button>
         </div>

@@ -68,10 +68,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  console.log('👤 Rol del usuario:', roleName);
+  console.log('👤 Rol del usuario:', roleName, 'id_rol:', perfil?.id_rol, 'Error:', error);
 
-  // Si no es jefe_ti, redirigir a /dashboard
-  if (error || roleName !== 'jefe_ti') {
+  // Si no es jefe_ti (rol = 1), redirigir a /dashboard
+  if (error || (roleName !== 'jefe_ti' && perfil?.id_rol !== 1)) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

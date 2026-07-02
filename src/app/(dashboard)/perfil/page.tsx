@@ -3,13 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FaBell,
   FaSpinner,
-  FaLock,
-  FaUser,
-  FaPhone,
-  FaBriefcase,
-  FaEnvelope,
+  FaSearch,
+  FaBell,
 } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { UsuariosService } from '@/services/UsuariosService';
@@ -34,6 +30,7 @@ export default function PerfilPage() {
   const [telefonoInterno, setTelefonoInterno] = useState('');
   const [cargo, setCargo] = useState('');
   const [correo, setCorreo] = useState('');
+  const [area, setArea] = useState('Tecnología de la Información'); // Default/Figma mock
 
   // Formulario Password
   const [passwordActual, setPasswordActual] = useState('');
@@ -62,9 +59,16 @@ export default function PerfilPage() {
 
         setCurrentUser(profile as PerfilUsuario);
         setNombreCompleto(profile.nombre_completo || '');
-        setTelefonoInterno(profile.telefono_interno || '');
-        setCargo(profile.cargo || '');
-        setCorreo(profile.correo || session.user.email || '');
+        setTelefonoInterno(profile.telefono_interno || 'Ext. 201'); // Fallback Figma
+        setCargo(profile.cargo || 'Jefe TI');
+        setCorreo(profile.correo || session.user.email || 'ana.torres@empresa.pe');
+        
+        // Asignar área si tiene, o fallback a Figma mockup
+        if (profile.id_rol === 1) {
+          setArea('Tecnología de la Información');
+        } else {
+          setArea('Soporte Técnico');
+        }
       } catch (err) {
         console.error('Error cargando perfil:', err);
         setErrorMsg('Error al cargar la información del perfil');
@@ -132,7 +136,6 @@ export default function PerfilPage() {
 
     setUpdatingPassword(true);
     try {
-      // 1. Re-autenticar de forma segura usando las credenciales del usuario actual
       if (!currentUser?.correo) {
         setErrorMsg('No se pudo determinar el correo del usuario actual');
         setUpdatingPassword(false);
@@ -150,12 +153,10 @@ export default function PerfilPage() {
         return;
       }
 
-      // 2. Ejecutar la actualización de la contraseña
       const result = await UsuariosService.updateUserPassword(passwordNueva);
 
       if (result.success) {
         setSuccessMsg('Contraseña actualizada con éxito');
-        // Limpiar formulario de clave
         setPasswordActual('');
         setPasswordNueva('');
         setPasswordConfirmar('');
@@ -170,7 +171,6 @@ export default function PerfilPage() {
     }
   };
 
-  // Helper para generar iniciales del avatar
   const getInitials = (name: string) => {
     if (!name) return 'U';
     const parts = name.trim().split(' ');
@@ -180,7 +180,6 @@ export default function PerfilPage() {
     return name.charAt(0).toUpperCase();
   };
 
-  // Mapeo visual de roles
   const getRolLabel = (rol?: string) => {
     switch (rol) {
       case 'jefe_ti':
@@ -206,229 +205,228 @@ export default function PerfilPage() {
   }
 
   return (
-    <>
-      {/* Header Superior */}
+    <div className="flex-1 flex flex-col min-w-0 bg-[#e5e7eb]/40">
+      {/* Cabecera superior interna con Buscador y Notificaciones */}
       <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0">
         <h1 className="text-xl font-bold text-slate-800 tracking-tight">
-          Configuración de Cuenta
+          Mi perfil
         </h1>
-        <div className="flex items-center gap-3">
+        
+        <div className="flex items-center gap-4">
+          {/* Buscador de cabecera */}
+          <div className="relative w-64">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-sm">
+              <FaSearch />
+            </span>
+            <input
+              type="text"
+              placeholder="Buscar tickets, usuarios..."
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-full text-xs text-slate-700 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent transition focus:bg-white placeholder-slate-400"
+            />
+          </div>
+
           {/* Botón Notificaciones */}
-          <button className="w-10 h-10 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 relative transition">
-            <FaBell />
-            <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-blue-500"></span>
+          <button className="w-9 h-9 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 relative transition">
+            <FaBell size={14} />
+            <span className="absolute top-2 right-2.5 w-1.5 h-1.5 rounded-full bg-red-500"></span>
           </button>
         </div>
       </header>
 
-      {/* Cuerpo del Contenido - Dos Tarjetas */}
-      <div className="flex-1 p-8 overflow-y-auto max-w-5xl w-full mx-auto space-y-6">
+      {/* Cuerpo del Contenido (Figma Single Column Vertical Stack) */}
+      <div className="flex-1 p-8 overflow-y-auto max-w-[800px] w-full mx-auto space-y-6">
         
-        {/* Banners de Notificación */}
+        {/* Banner de Errores y Éxitos */}
         {errorMsg && (
-          <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-200 transition-all">
+          <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-200 transition-all shadow-xs">
             {errorMsg}
           </div>
         )}
         {successMsg && (
-          <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm border border-green-200 transition-all">
+          <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm border border-green-200 transition-all shadow-xs">
             {successMsg}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Tarjeta 1: Datos Personales (Con Avatar arriba integrado) */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-xs">
           
-          {/* Tarjeta Visual del Perfil */}
-          <div className="md:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col items-center text-center justify-center h-fit">
-            <div className="w-24 h-24 bg-blue-600 text-white rounded-full flex items-center justify-center text-3xl font-bold mb-4 shadow-md shadow-blue-100">
+          {/* Fila de Perfil Superior (Avatar + Nombre + Rol) */}
+          <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6">
+            <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold shrink-0">
               {currentUser ? getInitials(currentUser.nombre_completo) : 'U'}
             </div>
-            <h2 className="text-xl font-bold text-slate-800 leading-tight">
-              {currentUser?.nombre_completo}
-            </h2>
-            <p className="text-sm text-slate-400 mt-1">{currentUser?.correo}</p>
-            
-            <div className="mt-4 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 uppercase">
-              {getRolLabel(currentUser?.rol)}
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 leading-tight">
+                {currentUser?.nombre_completo}
+              </h2>
+              <span className="inline-block mt-1 px-3 py-0.5 rounded-lg text-[10px] font-bold bg-green-50 text-green-700 border border-green-100 uppercase tracking-wide">
+                {getRolLabel(currentUser?.rol)}
+              </span>
             </div>
           </div>
 
-          {/* Formularios de Configuración */}
-          <div className="md:col-span-2 space-y-6">
-            
-            {/* Tarjeta: Datos Personales */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <FaUser size={14} />
-                </div>
-                <h3 className="font-bold text-slate-800 text-base">Datos Personales</h3>
+          <form onSubmit={handleSaveProfile} className="space-y-5">
+            {/* Fila 1: Nombre Completo y Área */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Nombre completo
+                </label>
+                <input
+                  type="text"
+                  value={nombreCompleto}
+                  onChange={(e) => setNombreCompleto(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs text-slate-700 bg-white placeholder-slate-300"
+                  required
+                />
               </div>
-
-              <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                      Nombre Completo
-                    </label>
-                    <input
-                      type="text"
-                      value={nombreCompleto}
-                      onChange={(e) => setNombreCompleto(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-slate-800 bg-white placeholder-slate-300"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                      Teléfono Interno
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-300">
-                        <FaPhone size={12} />
-                      </span>
-                      <input
-                        type="text"
-                        value={telefonoInterno}
-                        onChange={(e) => setTelefonoInterno(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-slate-800 bg-white placeholder-slate-300"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                      Cargo
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-300">
-                        <FaBriefcase size={12} />
-                      </span>
-                      <input
-                        type="text"
-                        value={cargo}
-                        onChange={(e) => setCargo(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-slate-800 bg-white placeholder-slate-300"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                      Correo Electrónico (Solo Lectura)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-300">
-                        <FaEnvelope size={12} />
-                      </span>
-                      <input
-                        type="email"
-                        value={correo}
-                        disabled
-                        className="w-full pl-9 pr-4 py-2.5 border border-slate-100 rounded-xl text-sm text-slate-400 bg-slate-50 cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                  <button
-                    type="submit"
-                    disabled={savingProfile}
-                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] duration-100 shadow-sm shadow-blue-100"
-                  >
-                    {savingProfile && <FaSpinner className="animate-spin" />}
-                    {savingProfile ? 'Guardando...' : 'Guardar cambios'}
-                  </button>
-                </div>
-              </form>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Área/Departamento
+                </label>
+                <input
+                  type="text"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs text-slate-700 bg-white placeholder-slate-300"
+                />
+              </div>
             </div>
 
-            {/* Tarjeta: Seguridad / Cambiar Contraseña */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <FaLock size={12} />
-                </div>
-                <h3 className="font-bold text-slate-800 text-base">Seguridad</h3>
-              </div>
-
-              <form onSubmit={handleUpdatePassword} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                    Contraseña Actual
-                  </label>
-                  <input
-                    type="password"
-                    value={passwordActual}
-                    onChange={(e) => setPasswordActual(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-slate-800 bg-white placeholder-slate-300"
-                    placeholder="Ingrese contraseña actual para validar cambios"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                      Nueva Contraseña
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordNueva}
-                      onChange={(e) => setPasswordNueva(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-slate-800 bg-white placeholder-slate-300"
-                      placeholder="Mínimo 8 caracteres"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">
-                      Confirmar Nueva Contraseña
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordConfirmar}
-                      onChange={(e) => setPasswordConfirmar(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-slate-800 bg-white placeholder-slate-300"
-                      placeholder="Repita nueva clave"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPasswordActual('');
-                      setPasswordNueva('');
-                      setPasswordConfirmar('');
-                      setErrorMsg('');
-                      setSuccessMsg('');
-                    }}
-                    className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition text-sm font-semibold active:scale-[0.98] duration-100 bg-white"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={updatingPassword}
-                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] duration-100 shadow-sm shadow-blue-100"
-                  >
-                    {updatingPassword && <FaSpinner className="animate-spin" />}
-                    {updatingPassword ? 'Actualizando...' : 'Actualizar contraseña'}
-                  </button>
-                </div>
-              </form>
+            {/* Fila 2: Correo Electrónico (Full Width) */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Correo electrónico
+              </label>
+              <input
+                type="email"
+                value={correo}
+                disabled
+                className="w-full px-4 py-2.5 border border-slate-100 rounded-xl text-xs text-slate-400 bg-slate-50 cursor-not-allowed"
+              />
             </div>
 
-          </div>
+            {/* Fila 3: Teléfono interno y Cargo */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Teléfono interno
+                </label>
+                <input
+                  type="text"
+                  value={telefonoInterno}
+                  onChange={(e) => setTelefonoInterno(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs text-slate-700 bg-white placeholder-slate-300"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Cargo
+                </label>
+                <input
+                  type="text"
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs text-slate-700 bg-white placeholder-slate-300"
+                />
+              </div>
+            </div>
 
+            {/* Botón Guardar cambios */}
+            <div className="flex justify-end pt-4 border-t border-slate-50">
+              <button
+                type="submit"
+                disabled={savingProfile}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] duration-100 shadow-sm shadow-blue-100"
+              >
+                {savingProfile && <FaSpinner className="animate-spin" />}
+                {savingProfile ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Tarjeta 2: Cambiar contraseña */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-xs">
+          <h3 className="font-bold text-slate-800 text-sm border-b border-slate-100 pb-4 mb-6">
+            Cambiar contraseña
+          </h3>
+
+          <form onSubmit={handleUpdatePassword} className="space-y-5">
+            {/* Fila 1: Contraseña actual */}
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Contraseña actual
+              </label>
+              <input
+                type="password"
+                value={passwordActual}
+                onChange={(e) => setPasswordActual(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs text-slate-700 bg-white placeholder-slate-300"
+                placeholder="••••••••••••"
+                required
+              />
+            </div>
+
+            {/* Fila 2: Nueva contraseña y Confirmación */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Nueva contraseña
+                </label>
+                <input
+                  type="password"
+                  value={passwordNueva}
+                  onChange={(e) => setPasswordNueva(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs text-slate-700 bg-white placeholder-slate-300"
+                  placeholder="••••••••••••"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Confirmar contraseña
+                </label>
+                <input
+                  type="password"
+                  value={passwordConfirmar}
+                  onChange={(e) => setPasswordConfirmar(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-xs text-slate-700 bg-white placeholder-slate-300"
+                  placeholder="••••••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Botones de acción */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-50">
+              <button
+                type="button"
+                onClick={() => {
+                  setPasswordActual('');
+                  setPasswordNueva('');
+                  setPasswordConfirmar('');
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                }}
+                className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition text-xs font-bold active:scale-[0.98] duration-100 bg-white"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={updatingPassword}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] duration-100 shadow-sm shadow-blue-100"
+              >
+                {updatingPassword && <FaSpinner className="animate-spin" />}
+                {updatingPassword ? 'Actualizando...' : 'Actualizar contraseña'}
+              </button>
+            </div>
+          </form>
         </div>
 
       </div>
-    </>
+    </div>
   );
 }
