@@ -93,7 +93,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     });
 
     mockSingle.mockResolvedValue({
-      data: { rol: 'tecnico' },
+      data: { id_rol: 2, roles: { nombre_rol: 'tecnico' } },
       error: null,
     });
 
@@ -101,7 +101,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     const response = await middleware(request);
 
     expect(mockFrom).toHaveBeenCalledWith('perfiles');
-    expect(mockEq).toHaveBeenCalledWith('user_id', 'user-id-tecnico');
+    expect(mockEq).toHaveBeenCalledWith('id_auth_supabase', 'user-id-tecnico');
     expect(NextResponse.redirect).toHaveBeenCalledWith(
       expect.objectContaining({
         pathname: '/dashboard',
@@ -126,7 +126,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     });
 
     mockSingle.mockResolvedValue({
-      data: { rol: 'jefe_ti' },
+      data: { id_rol: 1, roles: { nombre_rol: 'jefe_ti' } },
       error: null,
     });
 
@@ -134,7 +134,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
     const response = await middleware(request);
 
     expect(mockFrom).toHaveBeenCalledWith('perfiles');
-    expect(mockEq).toHaveBeenCalledWith('user_id', 'user-id-jefe');
+    expect(mockEq).toHaveBeenCalledWith('id_auth_supabase', 'user-id-jefe');
     expect(NextResponse.next).toHaveBeenCalled();
     expect(response).toEqual(
       expect.objectContaining({

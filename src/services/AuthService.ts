@@ -12,27 +12,95 @@ export class AuthService {
    */
   static async signIn(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      // 1. Consultar estado de bloqueo en la base de datos antes de intentar autenticar
+      const { data: profile, error: profileErr } = await supabase
+        .from('perfiles')
+        .select('id_auth_supabase, fecha_bloqueo, intentos_fallidos, estado')
+        .eq('correo', credentials.email)
+        .maybeSingle();
+
+      if (profile) {
+        // Verificar si la cuenta está inactiva
+        if (profile.estado === 'inactivo') {
+          return {
+            user: null,
+            session: null,
+            error: 'Cuenta desactivada. Contacte al Jefe de TI.',
+          };
+        }
+
+        // Verificar si tiene un bloqueo activo
+        if (profile.fecha_bloqueo) {
+          const lockTime = new Date(profile.fecha_bloqueo).getTime();
+          const now = Date.now();
+          if (lockTime > now) {
+            const remainingSec = Math.ceil((lockTime - now) / 1000);
+            return {
+              user: null,
+              session: null,
+              error: `LOCK:${remainingSec}`,
+            };
+          }
+        }
+      }
+
+      // 2. Intentar autenticar con Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       });
 
       if (error) {
+        // Incrementar intentos fallidos usando el RPC
+        const failedResult = await AuthService.handleFailedLogin(credentials.email);
+
+        // Si el error de Supabase es de conexión de red
+        if (error.message.includes('fetch') || error.status === 0 || error.message.toLowerCase().includes('network')) {
+          return {
+            user: null,
+            session: null,
+            error: 'Error de conexión con el servidor. Intente más tarde',
+          };
+        }
+
+        if (failedResult?.blocked) {
+          const remainingSec = 900; // 15 minutos por defecto en segundos
+          return {
+            user: null,
+            session: null,
+            error: `LOCK:${remainingSec}`,
+          };
+        }
+
         return {
           user: null,
           session: null,
-          error: error.message,
+          error: 'Credenciales inválidas',
         };
       }
 
-      // Obtener rol del usuario
+      // 3. Validar perfil y rol del usuario autenticado
       if (data.user) {
         const role = await PerfilesRepository.getRoleByUserId(data.user.id);
+        
+        // Si el usuario no tiene perfil o rol asignado
+        if (!role) {
+          await supabase.auth.signOut();
+          return {
+            user: null,
+            session: null,
+            error: 'Perfil o rol no válido. Contacte al Jefe de TI',
+          };
+        }
+
+        // Reiniciar el contador de intentos fallidos tras login exitoso
+        await AuthService.resetFailedLoginAttempts(credentials.email);
+
         return {
           user: {
             id: data.user.id,
             email: data.user.email || '',
-            role: role || undefined,
+            role: role,
           },
           session: {
             access_token: data.session?.access_token || '',

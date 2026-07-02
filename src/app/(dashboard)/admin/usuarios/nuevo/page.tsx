@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UsuariosService } from '@/services/UsuariosService';
 
+import { registerUserSchema } from '@/types/auth';
+
 export const dynamic = 'force-dynamic';
 
 export default function RegisterUserPage() {
@@ -25,26 +27,33 @@ export default function RegisterUserPage() {
     setSuccess(false);
     setLoading(true);
 
-    if (!nombre.trim() || !apellido.trim() || !email.trim() || !rol) {
-      setError(' Los campos Nombre, Apellido, Correo y Rol son obligatorios.');
+    const validation = registerUserSchema.safeParse({
+      nombre: nombre.trim(),
+      apellido: apellido.trim(),
+      email: email.trim(),
+      rol,
+      area: area.trim() || null,
+      telefono: telefono.trim() || null,
+      cargo: cargo.trim() || null,
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error?.issues?.[0]?.message || 'Datos de formulario inválidos';
+      setError(` ${firstError}`);
       setLoading(false);
       return;
     }
 
-    if (!email.includes('@') || !email.includes('.')) {
-      setError(' Ingresa un correo electrónico válido.');
-      setLoading(false);
-      return;
-    }
+    const validData = validation.data;
 
     try {
       const result = await UsuariosService.registerUser({
-        email,
-        nombre_completo: `${nombre.trim()} ${apellido.trim()}`,
-        rol,
-        area: area.trim() || null,
-        telefono: telefono.trim() || null,
-        cargo: cargo.trim() || null,
+        email: validData.email,
+        nombre_completo: `${validData.nombre} ${validData.apellido}`,
+        rol: validData.rol,
+        area: validData.area,
+        telefono: validData.telefono,
+        cargo: validData.cargo,
       });
 
       if (!result.success) {

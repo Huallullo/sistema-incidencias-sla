@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   FaHeadphones,
   FaSignOutAlt,
@@ -17,6 +17,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<PerfilUsuario | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -90,13 +91,24 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium"
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium ${
+                    pathname === '/dashboard'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
                 >
                   Dashboard
                 </button>
               </li>
               <li>
-                <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium flex items-center justify-between">
+                <button
+                  onClick={() => router.push('/dashboard/tickets')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium flex items-center justify-between ${
+                    pathname === '/dashboard/tickets'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
                   <span>Tickets</span>
                   <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
                     5
@@ -113,7 +125,11 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/admin/usuarios')}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium"
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium ${
+                    pathname?.startsWith('/admin/usuarios')
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
                 >
                   Usuarios
                 </button>
@@ -148,13 +164,24 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium"
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium ${
+                    pathname === '/dashboard'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
                 >
                   Dashboard Técnico
                 </button>
               </li>
               <li>
-                <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium flex items-center justify-between">
+                <button
+                  onClick={() => router.push('/dashboard/tickets')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium flex items-center justify-between ${
+                    pathname === '/dashboard/tickets'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
                   <span>Mis Incidencias</span>
                   <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
                     2
@@ -181,13 +208,24 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium"
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium ${
+                    pathname === '/dashboard'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
                 >
                   Dashboard Usuario
                 </button>
               </li>
               <li>
-                <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-medium flex items-center justify-between">
+                <button
+                  onClick={() => router.push('/dashboard/tickets')}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition font-medium flex items-center justify-between ${
+                    pathname === '/dashboard/tickets'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
                   <span>Mis Reportes</span>
                 </button>
               </li>

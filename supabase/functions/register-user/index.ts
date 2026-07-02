@@ -59,6 +59,11 @@ Deno.serve(async (req) => {
     const requestOrigin = req.headers.get('origin') || 'https://sistema-incidencias-sla.vercel.app';
     const redirectTo = `${requestOrigin}/reset-password`;
 
+    // Derivar nombre y apellido para el trigger
+    const nameParts = nombre_completo.trim().split(/\s+/);
+    const nombre = nameParts[0] || '';
+    const apellido = nameParts.slice(1).join(' ') || '';
+
     // ── PASO 1: Crear e invitar usuario en Supabase Auth ──────────────────────
     const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(
       email,
@@ -66,10 +71,13 @@ Deno.serve(async (req) => {
         redirectTo,
         data: {
           nombre_completo,
+          nombre,
+          apellido,
           rol,
           area:     area     || null,
           telefono: telefono || null,
           cargo:    cargo    || null,
+          redirectTo,
         },
       }
     );
@@ -94,73 +102,13 @@ Deno.serve(async (req) => {
     const userId    = authData.user.id;
     const userEmail = authData.user.email ?? email;
 
-    // ── PASO 2: INSERT en public.perfiles ─────────────────────────────────────
-    // Equivale al trigger on_auth_user_created en auth.users.
-    // Corre con service_role, por lo que las políticas RLS no lo bloquean.
-    // Verificar que el perfil no exista antes de insertar
-    const { data: existingPerfil } = await supabase
-      .from('perfiles')
-      .select('user_id')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    const { error: perfilError } = existingPerfil
-      ? { error: null }  // Ya existe, no insertar
-      : await supabase
-          .from('perfiles')
-          .insert({
-            user_id:          userId,
-            nombre_completo,
-            rol,
-            telefono_interno: telefono || null,
-            cargo:            cargo    || null,
-            correo:           userEmail,
-            estado:           'activo',
-          });
-
-    if (perfilError) {
-      console.error('[register-user] Error insertando perfil:', perfilError.message);
-    }
-
-    // ── PASO 3: Mock de correo → INSERT en email_logs ─────────────────────────
-    // Simula e historiza el envío de invitación para control interno.
-    const cuerpoCorreo = [
-      `Hola ${nombre_completo},`,
-      '',
-      'Tu cuenta ha sido creada en el Sistema de Incidencias SLA.',
-      '',
-      'Para activar tu cuenta y configurar tu contraseña de acceso, por favor ingresa al siguiente enlace:',
-      `👉 ${redirectTo}`,
-      '',
-      `Rol asignado: ${rol}`,
-      '',
-      'Este enlace de invitación es de un único uso.',
-      '',
-      'Saludos,',
-      'Jefe de TI — Sistema de Incidencias SLA',
-    ].join('\n');
-
-    const { error: emailError } = await supabase
-      .from('email_logs')
-      .insert({
-        user_id:       userId,
-        email_destino: userEmail,
-        asunto:        'Bienvenido al Sistema de Incidencias SLA — Activación de cuenta',
-        cuerpo:        cuerpoCorreo,
-        estado:        'pendiente',
-      });
-
-    if (emailError) {
-      console.error('[register-user] Error registrando email_log:', emailError.message);
-    }
-
     // ── Respuesta de éxito ─────────────────────────────────────────────────────
     return new Response(
       JSON.stringify({
         success:           true,
         user:              { id: userId, email: userEmail },
-        perfil_creado:     !perfilError,
-        email_programado:  !emailError,
+        perfil_creado:     true, // Manejado síncronamente por el trigger
+        email_programado:  true, // Manejado síncronamente por el trigger
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

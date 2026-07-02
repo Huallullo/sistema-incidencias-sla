@@ -54,14 +54,24 @@ export async function middleware(request: NextRequest) {
   // Obtener el rol del usuario
   const { data: perfil, error } = await supabase
     .from('perfiles')
-    .select('rol')
-    .eq('user_id', session.user.id)
+    .select('id_rol, roles(nombre_rol)')
+    .eq('id_auth_supabase', session.user.id)
     .single();
 
-  console.log('👤 Rol del usuario:', perfil?.rol);
+  const roleData = perfil?.roles;
+  let roleName: string | null = null;
+  if (roleData) {
+    if (Array.isArray(roleData)) {
+      roleName = roleData[0]?.nombre_rol || null;
+    } else if (typeof roleData === 'object') {
+      roleName = (roleData as any).nombre_rol || null;
+    }
+  }
+
+  console.log('👤 Rol del usuario:', roleName);
 
   // Si no es jefe_ti, redirigir a /dashboard
-  if (error || perfil?.rol !== 'jefe_ti') {
+  if (error || roleName !== 'jefe_ti') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

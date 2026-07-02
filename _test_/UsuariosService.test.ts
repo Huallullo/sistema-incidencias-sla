@@ -7,6 +7,7 @@ jest.mock('../src/lib/supabaseClient', () => ({
     auth: {
       getSession: jest.fn(),
     },
+    from: jest.fn(),
   },
 }));
 
@@ -160,5 +161,91 @@ describe('UsuariosService - registerUser', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('La contraseña es demasiado débil');
+  });
+});
+
+describe('UsuariosService - getUsers', () => {
+  const mockRange = jest.fn();
+  const mockOrder = jest.fn();
+  const mockOr = jest.fn();
+  const mockEq = jest.fn();
+  const mockSelect = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Configurar encadenamiento por defecto del query builder de Supabase
+    (supabase.from as jest.Mock).mockReturnValue({ select: mockSelect });
+    mockSelect.mockReturnValue({ eq: mockEq, or: mockOr, order: mockOrder, range: mockRange });
+    mockEq.mockReturnValue({ or: mockOr, order: mockOrder, range: mockRange });
+    mockOr.mockReturnValue({ order: mockOrder, range: mockRange });
+    mockOrder.mockReturnValue({ range: mockRange });
+  });
+
+  it('debe obtener la lista de usuarios sin filtros aplicando paginacion y mapeando roles', async () => {
+    const mockData = [
+      {
+        id_perfil: '1',
+        id_auth_supabase: 'auth-1',
+        id_rol: 1,
+        correo: 'admin@test.com',
+        nombre: 'Ana',
+        apellido: 'Torres',
+        estado: 'activo',
+        roles: { nombre_rol: 'jefe_ti' }
+      }
+    ];
+
+    mockRange.mockResolvedValue({
+      data: mockData,
+      count: 1,
+      error: null,
+    });
+
+    const result = await UsuariosService.getUsers({ page: 1, limit: 10 });
+
+    expect(result.success).toBe(true);
+    expect(result.data).toHaveLength(1);
+    expect(result.data![0].nombre_completo).toBe('Ana Torres');
+    expect(result.data![0].rol).toBe('jefe_ti');
+    expect(supabase.from).toHaveBeenCalledWith('perfiles');
+    expect(mockRange).toHaveBeenCalledWith(0, 9);
+  });
+
+  it('debe aplicar el filtro correcto por id_rol al filtrar por tecnico', async () => {
+    mockRange.mockResolvedValue({
+      data: [],
+      count: 0,
+      error: null,
+    });
+
+    await UsuariosService.getUsers({ rol: 'tecnico' });
+
+    expect(mockEq).toHaveBeenCalledWith('id_rol', 2);
+  });
+
+  it('debe aplicar la clausula OR con ilike al buscar texto', async () => {
+    mockRange.mockResolvedValue({
+      data: [],
+      count: 0,
+      error: null,
+    });
+
+    await UsuariosService.getUsers({ search: 'Pedro' });
+
+    expect(mockOr).toHaveBeenCalledWith('nombre.ilike.%Pedro%,apellido.ilike.%Pedro%,correo.ilike.%Pedro%');
+  });
+
+  it('debe capturar y retornar los errores reportados por Supabase', async () => {
+    mockRange.mockResolvedValue({
+      data: null,
+      count: null,
+      error: { message: 'Database connection failed' },
+    });
+
+    const result = await UsuariosService.getUsers();
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Database connection failed');
   });
 });

@@ -1,9 +1,15 @@
+const mockMaybeSingle = jest.fn();
+const mockEq = jest.fn().mockImplementation(() => ({ maybeSingle: mockMaybeSingle }));
+const mockSelect = jest.fn().mockImplementation(() => ({ eq: mockEq }));
+const mockFrom = jest.fn().mockImplementation(() => ({ select: mockSelect }));
+
 jest.mock('../src/lib/supabaseClient', () => ({
   supabase: {
     auth: {
       signInWithPassword: jest.fn(),
     },
     rpc: jest.fn(),
+    from: (table: string) => mockFrom(table),
   },
 }));
 
@@ -15,12 +21,20 @@ jest.mock('../src/repositories/PerfilesRepository', () => ({
 
 import { AuthService } from '../src/services/AuthService';
 import { supabase } from '../src/lib/supabaseClient';
+
 describe('Security - Bloqueo de cuenta', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockMaybeSingle.mockReset();
+    mockEq.mockClear();
+    mockSelect.mockClear();
+    mockFrom.mockClear();
   });
 
   it('debe llamar a handle_failed_login después de credenciales inválidas', async () => {
+    // Pre-check de perfil sin bloqueo
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
     (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({
       data: { user: null, session: null },
       error: { message: 'Invalid login credentials' },
@@ -37,18 +51,13 @@ describe('Security - Bloqueo de cuenta', () => {
 
     const result = await AuthService.signIn({
       email: 'test@test.com',
-      password: 'wrong',
+      password: 'wrongpassword',
     });
 
-    expect(result.error).toBe('Invalid login credentials');
+    expect(result.error).toBe('Credenciales inválidas');
   });
 
   it('debe bloquear la cuenta después de múltiples intentos fallidos', async () => {
-    (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({
-      data: { user: null, session: null },
-      error: { message: 'Invalid login credentials' },
-    });
-
     (supabase.rpc as jest.Mock).mockResolvedValue({
       data: {
         blocked: true,
@@ -66,3 +75,4 @@ describe('Security - Bloqueo de cuenta', () => {
     });
   });
 });
+

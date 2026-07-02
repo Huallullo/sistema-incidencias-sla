@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import { generateTemporaryPassword } from '@/utils/security';
-import { PerfilUsuario } from '@/types/auth';
+import { UserRole, PerfilUsuario } from '@/types/auth';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 
 export interface RegisterUserParams {
@@ -25,6 +25,55 @@ export interface GetUsersResult {
   data?: PerfilUsuario[];
   count?: number;
   error?: string;
+}
+
+/**
+ * Mapea un registro de la base de datos (con join de roles) a la interfaz PerfilUsuario
+ */
+function mapDbToPerfilUsuario(data: any): PerfilUsuario {
+  if (!data) return data;
+
+  let rolString: UserRole = 'usuario';
+  const roleData = data.roles;
+  let dbRoleName: string | null = null;
+  if (roleData) {
+    if (Array.isArray(roleData)) {
+      dbRoleName = roleData[0]?.nombre_rol || null;
+    } else if (typeof roleData === 'object') {
+      dbRoleName = (roleData as any).nombre_rol || null;
+    }
+  }
+
+  if (dbRoleName === 'jefe_ti' || data.id_rol === 1) {
+    rolString = 'jefe_ti';
+  } else if (dbRoleName === 'tecnico' || data.id_rol === 2) {
+    rolString = 'tecnico';
+  }
+
+  const nombreCompleto = `${data.nombre || ''} ${data.apellido || ''}`.trim();
+
+  return {
+    id_perfil: data.id_perfil,
+    id_auth_supabase: data.id_auth_supabase,
+    id_rol: data.id_rol,
+    correo: data.correo,
+    nombre: data.nombre || '',
+    apellido: data.apellido || '',
+    estado: data.estado || 'activo',
+    intentos_fallidos: data.intentos_fallidos || 0,
+    fecha_bloqueo: data.fecha_bloqueo,
+    fecha_creacion: data.fecha_creacion,
+    cargo: data.cargo,
+    telefono_interno: data.telefono_interno,
+
+    // Compatibilidad hacia atrás
+    id: data.id_perfil,
+    user_id: data.id_auth_supabase,
+    nombre_completo: nombreCompleto,
+    rol: rolString,
+    bloqueado_hasta: data.fecha_bloqueo,
+    created_at: data.fecha_creacion,
+  };
 }
 
 /**
@@ -113,23 +162,26 @@ export class UsuariosService {
       const from = (page - 1) * limit;
       const to = from + limit - 1;
 
-      // Iniciar consulta a la tabla 'perfiles'
+      // Iniciar consulta a la tabla 'perfiles' con join a 'roles'
       let query = supabase
         .from('perfiles')
-        .select('id, user_id, nombre_completo, rol, intentos_fallidos, created_at, telefono_interno, cargo, correo, estado', { count: 'exact' });
+        .select('id_perfil, id_auth_supabase, id_rol, correo, nombre, apellido, estado, intentos_fallidos, fecha_bloqueo, fecha_creacion, cargo, telefono_interno, roles(nombre_rol)', { count: 'exact' });
 
       // Filtrar por rol si no es "todos" y tiene valor
       if (rol && rol !== 'todos') {
-        query = query.eq('rol', rol);
+        let idRol = 3;
+        if (rol === 'jefe_ti') idRol = 1;
+        else if (rol === 'tecnico') idRol = 2;
+        query = query.eq('id_rol', idRol);
       }
 
-      // Filtrar por búsqueda parcial (ilike) en nombre o correo
+      // Filtrar por búsqueda parcial (ilike) en nombre, apellido o correo
       if (search) {
-        query = query.or(`nombre_completo.ilike.%${search}%,correo.ilike.%${search}%`);
+        query = query.or(`nombre.ilike.%${search}%,apellido.ilike.%${search}%,correo.ilike.%${search}%`);
       }
 
       // Ordenar por fecha de creación descendente
-      query = query.order('created_at', { ascending: false });
+      query = query.order('fecha_creacion', { ascending: false });
 
       // Aplicar rango de paginación
       query = query.range(from, to);
@@ -143,9 +195,12 @@ export class UsuariosService {
         };
       }
 
+      // Mapear cada fila al tipo PerfilUsuario
+      const mappedData = (data || []).map(row => mapDbToPerfilUsuario(row));
+
       return {
         success: true,
-        data: (data || []) as PerfilUsuario[],
+        data: mappedData,
         count: count || 0,
       };
     } catch (err) {
@@ -174,9 +229,9 @@ export class UsuariosService {
       if (profileData.correo) {
         const { data: existing, error: checkError } = await supabase
           .from('perfiles')
-          .select('user_id')
+          .select('id_auth_supabase')
           .eq('correo', profileData.correo)
-          .neq('user_id', userId)
+          .neq('id_auth_supabase', userId)
           .maybeSingle();
 
         if (checkError) {
@@ -209,33 +264,9 @@ export class UsuariosService {
     redirectTo: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // Validar primero si el correo existe en perfiles
-      const { data: userProfile, error: profileError } = await supabase
-        .from('perfiles')
-        .select('user_id')
-        .eq('correo', email)
-        .maybeSingle();
-
-      if (profileError) {
-        return { success: false, error: profileError.message };
-      }
-      if (!userProfile) {
-        return {
-          success: false,
-          error: 'El correo electrónico ingresado no se encuentra registrado en el sistema',
-        };
-      }
-
-      // Enviar correo de restablecimiento de contraseña de Supabase
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
-      });
-
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      return { success: true };
+      // Importación dinámica del server action para evitar problemas de compilación en cliente
+      const { sendPasswordResetAction } = await import('@/actions/authActions');
+      return await sendPasswordResetAction(email, redirectTo);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al solicitar el enlace de recuperación';
       return {
@@ -246,7 +277,44 @@ export class UsuariosService {
   }
 
   /**
-   * Actualiza la contraseña en Supabase Auth
+   * Verifica si un token de recuperación es válido
+   */
+  static async verifyPasswordResetToken(
+    token: string
+  ): Promise<{ success: boolean; data?: { perfil_id: string; id_auth_supabase: string }; error?: string }> {
+    try {
+      const { verifyPasswordResetTokenAction } = await import('@/actions/authActions');
+      return await verifyPasswordResetTokenAction(token);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al verificar el token';
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Restablece la contraseña utilizando el token temporal de base de datos
+   */
+  static async resetPasswordWithToken(
+    token: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { resetPasswordWithTokenAction } = await import('@/actions/authActions');
+      return await resetPasswordWithTokenAction(token, newPassword);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error al restablecer la contraseña';
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Actualiza la contraseña en Supabase Auth (para usuarios autenticados)
    */
   static async updateUserPassword(password: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -266,5 +334,6 @@ export class UsuariosService {
     }
   }
 }
+
 
 

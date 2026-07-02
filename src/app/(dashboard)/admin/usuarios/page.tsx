@@ -29,7 +29,7 @@ export default function GestionUsuariosPage() {
   // Filtros y Paginación
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'todos' | 'tecnico' | 'usuario'>('todos');
+  const [activeTab, setActiveTab] = useState<'todos' | 'jefe_ti' | 'tecnico' | 'usuario'>('todos');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8; // Límite de ítems por página
 
@@ -228,6 +228,20 @@ export default function GestionUsuariosPage() {
             }`}
           >
             Todos
+          </button>
+          <button
+            data-testid="tab-jefe-ti"
+            onClick={() => {
+              setActiveTab('jefe_ti');
+              setCurrentPage(1);
+            }}
+            className={`px-4 py-2 text-sm font-bold border-b-2 transition ${
+              activeTab === 'jefe_ti'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Jefes de TI
           </button>
           <button
             data-testid="tab-tecnicos"

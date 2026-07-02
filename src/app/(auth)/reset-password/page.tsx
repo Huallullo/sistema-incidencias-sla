@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FaHeadphones, FaLock, FaSpinner } from 'react-icons/fa';
 import { UsuariosService } from '@/services/UsuariosService';
-import { supabase } from '@/lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,29 +15,32 @@ export default function ResetPasswordPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token') || '';
 
   useEffect(() => {
-    // Supabase procesa el token de recuperación de la URL de manera automática en el cliente,
-    // estableciendo una sesión activa temporal. Validamos si hay una sesión.
-    async function checkSession() {
+    async function checkTokenValidity() {
+      if (!token) {
+        setErrorMsg('El enlace de recuperación es inválido o ha expirado. Por favor, solicite uno nuevo.');
+        setCheckingSession(false);
+        return;
+      }
+
       try {
-        const { data } = await supabase.auth.getSession();
-        
-        // Si no hay sesión y tampoco hay un hash con access_token en la URL,
-        // significa que el usuario ingresó a la ruta sin el enlace del correo.
-        if (!data.session && !window.location.hash.includes('access_token')) {
-          setErrorMsg('El enlace de recuperación es inválido o ha expirado. Por favor, solicite uno nuevo.');
+        const result = await UsuariosService.verifyPasswordResetToken(token);
+        if (!result.success) {
+          setErrorMsg(result.error || 'El enlace de recuperación es inválido o ha expirado.');
         }
       } catch (err) {
         console.error(err);
-        setErrorMsg('Error al validar la sesión de restablecimiento');
+        setErrorMsg('Error al validar el enlace de recuperación');
       } finally {
         setCheckingSession(false);
       }
     }
 
-    checkSession();
-  }, [router]);
+    checkTokenValidity();
+  }, [token]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,14 +61,11 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      const result = await UsuariosService.updateUserPassword(password);
+      const result = await UsuariosService.resetPasswordWithToken(token, password);
 
       if (result.success) {
         setSuccessMsg('Su contraseña ha sido restablecida con éxito. Redirigiendo al inicio de sesión...');
         
-        // Cerrar la sesión temporal para forzar un login limpio
-        await supabase.auth.signOut();
-
         setTimeout(() => {
           router.push('/login');
         }, 3000);
@@ -119,7 +118,8 @@ export default function ResetPasswordPage() {
                 placeholder="Mínimo 8 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-[#d1d5db] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent text-base text-[#1e293b] placeholder-[#9ca3af] bg-white"
+                disabled={!!errorMsg || loading}
+                className="w-full pl-10 pr-4 py-3 border border-[#d1d5db] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent text-base text-[#1e293b] placeholder-[#9ca3af] bg-white disabled:bg-slate-50 disabled:text-slate-400"
                 required
               />
             </div>
@@ -138,7 +138,8 @@ export default function ResetPasswordPage() {
                 placeholder="Repita la nueva contraseña"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-[#d1d5db] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent text-base text-[#1e293b] placeholder-[#9ca3af] bg-white"
+                disabled={!!errorMsg || loading}
+                className="w-full pl-10 pr-4 py-3 border border-[#d1d5db] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent text-base text-[#1e293b] placeholder-[#9ca3af] bg-white disabled:bg-slate-50 disabled:text-slate-400"
                 required
               />
             </div>
@@ -176,5 +177,17 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-[#dbeafe] px-4">
+        <FaSpinner className="animate-spin text-4xl text-blue-600" />
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

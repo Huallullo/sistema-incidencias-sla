@@ -1,82 +1,100 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaHeadphones } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
-import { UserRole } from '@/types/auth';
+import { loginSchema } from '@/types/auth';
 
 export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('jefe_ti');
   const [error, setError] = useState('');
+  const [lockCountdown, setLockCountdown] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const roleLabels: Record<string, string> = {
-    jefe_ti: 'Jefe TI',
-    tecnico: 'Técnico',
-    usuario: 'Usuario',
+  // Formatear segundos en [mm:ss]
+  const formatTime = (seconds: number) => {
+    const mm = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const ss = (seconds % 60).toString().padStart(2, '0');
+    return `${mm}:${ss}`;
   };
+
+  // Manejar el temporizador dinámico del bloqueo de la cuenta
+  useEffect(() => {
+    if (lockCountdown === null) return;
+    if (lockCountdown <= 0) {
+      setLockCountdown(null);
+      setError('');
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setLockCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          setError('');
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockCountdown]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLockCountdown(null);
     setLoading(true);
 
+    // 1. Validar campos en tiempo real usando Zod
+    const validation = loginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      const firstError = validation.error.issues[0]?.message || 'Credenciales inválidas';
+      setError(firstError);
+      setLoading(false);
+      return;
+    }
+
     try {
-      // 1. Intentar iniciar sesión
+      // 2. Intentar iniciar sesión
       const response = await AuthService.signIn({ email, password });
 
-      // 2. Si hay error de autenticación (credenciales inválidas)
+      // 3. Manejo de errores devueltos por el backend
       if (response.error || !response.user) {
-        // Llamar al servicio de manejo de intentos fallidos
-        const failResult = await AuthService.handleFailedLogin(email);
+        const errorMsg = response.error || 'Error al iniciar sesión';
 
-        if (failResult?.blocked === true) {
-          const blockedUntil = new Date(failResult.blocked_until!);
-          const minutesLeft = Math.ceil((blockedUntil.getTime() - Date.now()) / 60000);
-          setError(`Cuenta bloqueada por 15 minutos. Reintenta en ${minutesLeft} minuto(s).`);
+        if (errorMsg.startsWith('LOCK:')) {
+          const seconds = parseInt(errorMsg.split(':')[1], 10);
+          setLockCountdown(seconds);
         } else {
-          setError(`Credenciales incorrectas. ${failResult?.message || 'Intento fallido'}`);
+          setError(errorMsg);
         }
         setLoading(false);
         return;
       }
 
-      // 3. Login exitoso: validar rol
-      if (!response.user.role) {
-        setError('No se pudo obtener el rol de usuario');
-        setLoading(false);
-        return;
-      }
-
-      // 4. Validación de roles seleccionados
-      if (response.user.role !== role) {
-        const rolSeleccionado = roleLabels[role as UserRole];
-        const rolReal = roleLabels[response.user.role];
-        setError(
-          `El rol seleccionado (${rolSeleccionado}) no coincide con el rol de la cuenta (${rolReal}).`
-        );
-        setLoading(false);
-        return;
-      }
-
-      // 5. Resetear contador de intentos (porque logró entrar)
-      await AuthService.resetFailedLoginAttempts(email);
-
-      // 6. Redirigir al dashboard único
+      // 4. Redirigir al panel de control principal
       router.push('/dashboard');
     } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-      else setError('Error al iniciar sesión');
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Error al iniciar sesión. Intente más tarde.');
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const displayError = lockCountdown !== null && lockCountdown > 0
+    ? `Cuenta bloqueada. Intente nuevamente en ${formatTime(lockCountdown)}`
+    : error;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#dbeafe] px-4">
@@ -91,24 +109,7 @@ export default function LoginPage() {
           Inicia sesión para continuar
         </p>
 
-        <div className="flex justify-center gap-3 mt-6">
-          {Object.entries(roleLabels).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setRole(key)}
-              className={`px-5 py-1.5 rounded-full text-sm font-medium transition ${
-                role === key
-                  ? 'bg-[#2563eb] text-white shadow-sm'
-                  : 'bg-[#e5e7eb] text-[#4b5563] hover:bg-[#d1d5db]'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleLogin} className="mt-6">
+        <form onSubmit={handleLogin} className="mt-8">
           <div className="mb-4">
             <input
               type="email"
@@ -116,6 +117,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent text-base text-[#1e293b] placeholder-[#9ca3af]"
+              disabled={loading || (lockCountdown !== null && lockCountdown > 0)}
               required
             />
           </div>
@@ -127,19 +129,20 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 border border-[#d1d5db] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent text-base text-[#1e293b] placeholder-[#9ca3af]"
+              disabled={loading || (lockCountdown !== null && lockCountdown > 0)}
               required
             />
           </div>
 
-          {error && (
+          {displayError && (
             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-200">
-              {error}
+              {displayError}
             </div>
           )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (lockCountdown !== null && lockCountdown > 0)}
             className="w-full bg-[#2563eb] text-white py-3 rounded-xl hover:bg-[#1d4ed8] transition text-base font-medium disabled:opacity-50"
           >
             {loading ? 'Cargando...' : 'Iniciar sesión'}

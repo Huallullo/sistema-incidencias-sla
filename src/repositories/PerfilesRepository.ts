@@ -2,6 +2,58 @@ import { supabase } from '@/lib/supabaseClient';
 import { UserRole, PerfilUsuario } from '@/types/auth';
 
 /**
+ * Mapea un registro de la base de datos (con join de roles) a la interfaz PerfilUsuario
+ */
+function mapDbToPerfilUsuario(data: any): PerfilUsuario {
+  if (!data) return data;
+
+  // Determinar rol como UserRole string
+  let rolString: UserRole = 'usuario';
+  
+  const roleData = data.roles;
+  let dbRoleName: string | null = null;
+  if (roleData) {
+    if (Array.isArray(roleData)) {
+      dbRoleName = roleData[0]?.nombre_rol || null;
+    } else if (typeof roleData === 'object') {
+      dbRoleName = (roleData as any).nombre_rol || null;
+    }
+  }
+
+  if (dbRoleName === 'jefe_ti' || data.id_rol === 1) {
+    rolString = 'jefe_ti';
+  } else if (dbRoleName === 'tecnico' || data.id_rol === 2) {
+    rolString = 'tecnico';
+  }
+
+  // Reconstruir nombre_completo
+  const nombreCompleto = `${data.nombre || ''} ${data.apellido || ''}`.trim();
+
+  return {
+    id_perfil: data.id_perfil,
+    id_auth_supabase: data.id_auth_supabase,
+    id_rol: data.id_rol,
+    correo: data.correo,
+    nombre: data.nombre || '',
+    apellido: data.apellido || '',
+    estado: data.estado || 'activo',
+    intentos_fallidos: data.intentos_fallidos || 0,
+    fecha_bloqueo: data.fecha_bloqueo,
+    fecha_creacion: data.fecha_creacion,
+    cargo: data.cargo,
+    telefono_interno: data.telefono_interno,
+
+    // Compatibilidad hacia atrás
+    id: data.id_perfil,
+    user_id: data.id_auth_supabase,
+    nombre_completo: nombreCompleto,
+    rol: rolString,
+    bloqueado_hasta: data.fecha_bloqueo,
+    created_at: data.fecha_creacion,
+  };
+}
+
+/**
  * PerfilesRepository - Acceso a datos de perfiles de usuarios
  * Capa de acceso a datos (Data Access Layer)
  */
@@ -13,8 +65,8 @@ export class PerfilesRepository {
     try {
       const { data, error } = await supabase
         .from('perfiles')
-        .select('rol')
-        .eq('user_id', userId)
+        .select('id_rol, roles(nombre_rol)')
+        .eq('id_auth_supabase', userId)
         .single();
 
       if (error) {
@@ -22,7 +74,21 @@ export class PerfilesRepository {
         return null;
       }
 
-      return data?.rol as UserRole || null;
+      const roleData = data?.roles;
+      let roleName: string | null = null;
+      if (roleData) {
+        if (Array.isArray(roleData)) {
+          roleName = roleData[0]?.nombre_rol || null;
+        } else if (typeof roleData === 'object') {
+          roleName = (roleData as any).nombre_rol || null;
+        }
+      }
+
+      if (roleName === 'jefe_ti' || data?.id_rol === 1) return 'jefe_ti';
+      if (roleName === 'tecnico' || data?.id_rol === 2) return 'tecnico';
+      if (roleName === 'usuario' || data?.id_rol === 3) return 'usuario';
+
+      return null;
     } catch (err) {
       console.error('Exception in getRoleByUserId:', err);
       return null;
@@ -32,12 +98,12 @@ export class PerfilesRepository {
   /**
    * Obtiene el perfil completo de un usuario
    */
-  static async getProfileByUserId(userId: string) {
+  static async getProfileByUserId(userId: string): Promise<PerfilUsuario | null> {
     try {
       const { data, error } = await supabase
         .from('perfiles')
-        .select('*')
-        .eq('user_id', userId)
+        .select('*, roles(nombre_rol)')
+        .eq('id_auth_supabase', userId)
         .single();
 
       if (error) {
@@ -45,7 +111,7 @@ export class PerfilesRepository {
         return null;
       }
 
-      return data;
+      return mapDbToPerfilUsuario(data);
     } catch (err) {
       console.error('Exception in getProfileByUserId:', err);
       return null;
@@ -55,16 +121,30 @@ export class PerfilesRepository {
   /**
    * Crea un nuevo perfil de usuario
    */
-  static async createProfile(userId: string, role: UserRole, nombre?: string) {
+  static async createProfile(userId: string, role: UserRole, nombreCompleto?: string): Promise<PerfilUsuario | null> {
     try {
+      const full = (nombreCompleto || '').trim();
+      const firstSpaceIndex = full.indexOf(' ');
+      let nombre = full;
+      let apellido = '';
+      if (firstSpaceIndex !== -1) {
+        nombre = full.substring(0, firstSpaceIndex).trim();
+        apellido = full.substring(firstSpaceIndex + 1).trim();
+      }
+
+      let idRol = 3; // default 'usuario'
+      if (role === 'jefe_ti') idRol = 1;
+      else if (role === 'tecnico') idRol = 2;
+
       const { data, error } = await supabase
         .from('perfiles')
         .insert({
-          user_id: userId,
-          rol: role,
-          nombre: nombre || '',
+          id_auth_supabase: userId,
+          id_rol: idRol,
+          nombre,
+          apellido,
         })
-        .select()
+        .select('*, roles(nombre_rol)')
         .single();
 
       if (error) {
@@ -72,7 +152,7 @@ export class PerfilesRepository {
         return null;
       }
 
-      return data;
+      return mapDbToPerfilUsuario(data);
     } catch (err) {
       console.error('Exception in createProfile:', err);
       return null;
@@ -89,14 +169,39 @@ export class PerfilesRepository {
       telefono_interno?: string;
       cargo?: string;
       correo?: string;
+      nombre?: string;
+      apellido?: string;
+      id_rol?: number;
     }
   ): Promise<{ success: boolean; data?: PerfilUsuario; error?: string }> {
     try {
+      const updateData: any = {};
+      if (profileData.telefono_interno !== undefined) updateData.telefono_interno = profileData.telefono_interno;
+      if (profileData.cargo !== undefined) updateData.cargo = profileData.cargo;
+      if (profileData.correo !== undefined) updateData.correo = profileData.correo;
+
+      if (profileData.nombre !== undefined) updateData.nombre = profileData.nombre;
+      if (profileData.apellido !== undefined) updateData.apellido = profileData.apellido;
+      if (profileData.id_rol !== undefined) updateData.id_rol = profileData.id_rol;
+
+      if (profileData.nombre_completo !== undefined) {
+        const full = (profileData.nombre_completo || '').trim();
+        const firstSpaceIndex = full.indexOf(' ');
+        let nombre = full;
+        let apellido = '';
+        if (firstSpaceIndex !== -1) {
+          nombre = full.substring(0, firstSpaceIndex).trim();
+          apellido = full.substring(firstSpaceIndex + 1).trim();
+        }
+        updateData.nombre = nombre;
+        updateData.apellido = apellido;
+      }
+
       const { data, error } = await supabase
         .from('perfiles')
-        .update(profileData)
-        .eq('user_id', userId)
-        .select()
+        .update(updateData)
+        .eq('id_auth_supabase', userId)
+        .select('*, roles(nombre_rol)')
         .single();
 
       if (error) {
@@ -104,7 +209,7 @@ export class PerfilesRepository {
         return { success: false, error: error.message };
       }
 
-      return { success: true, data };
+      return { success: true, data: mapDbToPerfilUsuario(data) };
     } catch (err) {
       console.error('Exception in updateProfile:', err);
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -112,4 +217,5 @@ export class PerfilesRepository {
     }
   }
 }
+
 

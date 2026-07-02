@@ -144,6 +144,15 @@ describe('GestionUsuariosPage (Consulta de Usuarios)', () => {
         expect.objectContaining({ rol: 'usuario' })
       );
     });
+
+    const jefesTab = screen.getByTestId('tab-jefe-ti');
+    await user.click(jefesTab);
+
+    await waitFor(() => {
+      expect(UsuariosService.getUsers).toHaveBeenLastCalledWith(
+        expect.objectContaining({ rol: 'jefe_ti' })
+      );
+    });
   });
 
   it('debe llamar al servicio de consulta con el debounce de busqueda', async () => {

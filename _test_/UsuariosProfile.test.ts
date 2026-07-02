@@ -49,12 +49,15 @@ describe('HU-004: Pruebas Unitarias de Perfil de Usuario', () => {
       
       // Mockear el update final en la base de datos
       const mockUpdatedProfile = {
-        id: 'perfil-id-123',
-        user_id: 'user-id-123',
-        nombre_completo: 'Juan Pérez Modificado',
+        id_perfil: 'perfil-id-123',
+        id_auth_supabase: 'user-id-123',
+        nombre: 'Juan',
+        apellido: 'Pérez Modificado',
         telefono_interno: 'Ext 999',
         cargo: 'Soporte',
         correo: 'juan.perez@empresa.pe',
+        id_rol: 3,
+        roles: { nombre_rol: 'usuario' }
       };
       mockFrom.single.mockResolvedValueOnce({ data: mockUpdatedProfile, error: null });
 
@@ -66,16 +69,14 @@ describe('HU-004: Pruebas Unitarias de Perfil de Usuario', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(mockUpdatedProfile);
+      expect(result.data?.nombre_completo).toBe('Juan Pérez Modificado');
       expect(supabase.from).toHaveBeenCalledWith('perfiles');
       expect(mockFrom.eq).toHaveBeenCalledWith('correo', 'juan.perez@empresa.pe');
-      expect(mockFrom.neq).toHaveBeenCalledWith('user_id', 'user-id-123');
-    });
-
-    it('debe retornar error si el correo ya está registrado por otro usuario', async () => {
-      // Mockear validación de duplicado: retorna un registro existente con otro user_id
+      expect(mockFrom.neq).toHaveBeenCalledWith('id_auth_supabase', 'user-id-123');
+    });    it('debe retornar error si el correo ya está registrado por otro usuario', async () => {
+      // Mockear validación de duplicado: retorna un registro existente con otro id_auth_supabase
       mockFrom.maybeSingle.mockResolvedValueOnce({
-        data: { user_id: 'other-user-456' },
+        data: { id_auth_supabase: 'other-user-456' },
         error: null,
       });
 
@@ -106,17 +107,24 @@ describe('HU-004: Pruebas Unitarias de Perfil de Usuario', () => {
 
   describe('PerfilesRepository.updateProfile', () => {
     it('debe llamar correctamente a la BD y retornar éxito con los datos', async () => {
-      const mockData = { user_id: 'user-123', nombre_completo: 'Test' };
-      mockFrom.single.mockResolvedValueOnce({ data: mockData, error: null });
+      const mockDbRow = {
+        id_perfil: 'perfil-123',
+        id_auth_supabase: 'user-123',
+        nombre: 'Test',
+        apellido: '',
+        id_rol: 3,
+        roles: { nombre_rol: 'usuario' }
+      };
+      mockFrom.single.mockResolvedValueOnce({ data: mockDbRow, error: null });
 
       const result = await PerfilesRepository.updateProfile('user-123', {
         nombre_completo: 'Test',
       });
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(mockData);
-      expect(mockFrom.update).toHaveBeenCalledWith({ nombre_completo: 'Test' });
-      expect(mockFrom.eq).toHaveBeenCalledWith('user_id', 'user-123');
+      expect(result.data?.nombre_completo).toBe('Test');
+      expect(mockFrom.update).toHaveBeenCalledWith({ nombre: 'Test', apellido: '' });
+      expect(mockFrom.eq).toHaveBeenCalledWith('id_auth_supabase', 'user-123');
     });
 
     it('debe retornar error si la consulta update en perfiles falla', async () => {
@@ -138,23 +146,20 @@ describe('HU-004: Pruebas Unitarias de Perfil de Usuario', () => {
     it('debe enviar el correo de recuperación exitosamente si el email está registrado', async () => {
       // 1. Mockear la verificación del email en perfiles (existe)
       mockFrom.maybeSingle.mockResolvedValueOnce({
-        data: { user_id: 'user-123' },
+        data: { id_perfil: 'perfil-123', id_auth_supabase: 'user-123' },
         error: null,
       });
 
-      // 2. Mockear el método resetPasswordForEmail
-      (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValueOnce({
-        data: {},
-        error: null,
-      });
+      // 2. Mockear la inserción en password_reset_tokens y email_logs
+      mockFrom.insert.mockResolvedValueOnce({ data: null, error: null }); // tokens
+      mockFrom.insert.mockResolvedValueOnce({ data: null, error: null }); // logs
 
       const result = await UsuariosService.sendPasswordReset('test@empresa.pe', 'http://localhost:3000/reset-password');
 
       expect(result.success).toBe(true);
-      expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
-        'test@empresa.pe',
-        { redirectTo: 'http://localhost:3000/reset-password' }
-      );
+      expect(supabase.from).toHaveBeenCalledWith('perfiles');
+      expect(supabase.from).toHaveBeenCalledWith('password_reset_tokens');
+      expect(supabase.from).toHaveBeenCalledWith('email_logs');
     });
 
     it('debe retornar error si el correo no existe en la base de datos de perfiles', async () => {
@@ -168,26 +173,26 @@ describe('HU-004: Pruebas Unitarias de Perfil de Usuario', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('El correo electrónico ingresado no se encuentra registrado en el sistema');
-      expect(supabase.auth.resetPasswordForEmail).not.toHaveBeenCalled();
+      expect(mockFrom.insert).not.toHaveBeenCalled();
     });
 
-    it('debe retornar error si Supabase Auth falla al enviar el correo', async () => {
+    it('debe retornar error si falla al registrar el token en base de datos', async () => {
       // 1. Mockear verificación del email en perfiles (existe)
       mockFrom.maybeSingle.mockResolvedValueOnce({
-        data: { user_id: 'user-123' },
+        data: { id_perfil: 'perfil-123', id_auth_supabase: 'user-123' },
         error: null,
       });
 
-      // 2. Mockear fallo en Auth
-      (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValueOnce({
+      // 2. Mockear fallo en inserción de token
+      mockFrom.insert.mockResolvedValueOnce({
         data: null,
-        error: { message: 'Email rate limit exceeded' },
+        error: { message: 'Database write error' },
       });
 
       const result = await UsuariosService.sendPasswordReset('test@empresa.pe', 'http://localhost:3000/reset-password');
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Email rate limit exceeded');
+      expect(result.error).toBe('Database write error');
     });
   });
 

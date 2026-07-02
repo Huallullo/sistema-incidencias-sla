@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="65bd71144e">
+  <diagram id="diagram_hu001_act" name="HU-001 Diagrama de Actividades con Carriles">
+    <mxGraphModel dx="1200" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="swimlane_container" value="Diagrama de Actividades - Inicio de Sesión (HU-001)" style="swimlane;html=1;childLayout=stackLayout;horizontal=false;startSize=45;horizontalStack=true;resizeParent=false;resizeParentMax=0;resizeNext=0;whiteSpace=wrap;fillColor=#1e293b;strokeColor=#0f172a;fontColor=#ffffff;fontSize=15;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="20" y="20" width="1200" height="1120" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_ui" value="Cliente / Interfaz de Usuario (UI)" style="swimlane;html=1;startSize=35;whiteSpace=wrap;fillColor=#eff6ff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontStyle=1;fontSize=12;" parent="swimlane_container" vertex="1">
+          <mxGeometry x="0" y="45" width="300" height="1075" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_backend" value="Servidor de Aplicación (Next.js Backend)" style="swimlane;html=1;startSize=35;whiteSpace=wrap;fillColor=#faf5ff;strokeColor=#a855f7;strokeWidth=1.5;fontColor=#581c87;fontStyle=1;fontSize=12;" parent="swimlane_container" vertex="1">
+          <mxGeometry x="300" y="45" width="300" height="1075" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_db" value="Base de Datos (PostgreSQL)" style="swimlane;html=1;startSize=35;whiteSpace=wrap;fillColor=#f0fdf4;strokeColor=#22c55e;strokeWidth=1.5;fontColor=#14532d;fontStyle=1;fontSize=12;" parent="swimlane_container" vertex="1">
+          <mxGeometry x="600" y="45" width="300" height="1075" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_supabase" value="Autenticación Externa (Supabase Auth)" style="swimlane;html=1;startSize=35;whiteSpace=wrap;fillColor=#fff7ed;strokeColor=#f97316;strokeWidth=1.5;fontColor=#7c2d12;fontStyle=1;fontSize=12;" parent="swimlane_container" vertex="1">
+          <mxGeometry x="900" y="45" width="300" height="1075" as="geometry" />
+        </mxCell>
+        <mxCell id="node_start" value="Inicio" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#dcfce7;strokeColor=#22c55e;strokeWidth=2.5;fontColor=#15803d;fontStyle=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="128" y="50" width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="node_input" value="Ingresar Email y Contraseña" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="130" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_val" value="Validar Formato Zod" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="210" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_val_dec" value="¿Válido?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=2;fontColor=#1e3a8a;fontStyle=1;fontSize=11;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="110" y="290" width="80" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="node_val_err" value="Mostrar error de validación" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="390" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_send" value="Enviar POST /api/auth/login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="470" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_err_bloq" value="Mostrar Alerta de Bloqueo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="550" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_timer" value="Mostrar Contador [mm:ss]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="630" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_err_cred" value="Mostrar Alerta: Credenciales Inválidas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="710" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_err_conn" value="Mostrar Alerta: Error de Conexión" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="790" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_err_perf" value="Mostrar Alerta: Perfil/Rol no Válido" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="870" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_redir" value="Redirigir a Dashboard según Rol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#3b82f6;strokeWidth=1.5;fontColor=#1e3a8a;fontSize=12;shadow=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="40" y="950" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_end" value="Fin" style="ellipse;shape=doubleEllipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#ffe4e6;strokeColor=#f43f5e;strokeWidth=2.5;fontColor=#be123c;fontStyle=1;" parent="lane_ui" vertex="1">
+          <mxGeometry x="128" y="1030" width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="node_chk_bloq" value="Verificar Bloqueo Previo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#a855f7;strokeWidth=1.5;fontColor=#581c87;fontSize=12;shadow=1;" parent="lane_backend" vertex="1">
+          <mxGeometry x="40" y="470" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_fail_login" value="Manejar Intento Fallido" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#a855f7;strokeWidth=1.5;fontColor=#581c87;fontSize=12;shadow=1;" parent="lane_backend" vertex="1">
+          <mxGeometry x="40" y="710" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_chk_perf" value="Consultar Perfil y Rol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#a855f7;strokeWidth=1.5;fontColor=#581c87;fontSize=12;shadow=1;" parent="lane_backend" vertex="1">
+          <mxGeometry x="40" y="870" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_db_bloq" value="¿Cuenta bloqueada?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#22c55e;strokeWidth=2;fontColor=#14532d;fontStyle=1;fontSize=11;shadow=1;" parent="lane_db" vertex="1">
+          <mxGeometry x="105" y="460" width="90" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="node_calc_time" value="Calcular tiempo restante" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#22c55e;strokeWidth=1.5;fontColor=#14532d;fontSize=12;shadow=1;" parent="lane_db" vertex="1">
+          <mxGeometry x="40" y="550" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_rpc_fail" value="RPC: handle_failed_login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#22c55e;strokeWidth=1.5;fontColor=#14532d;fontSize=12;shadow=1;" parent="lane_db" vertex="1">
+          <mxGeometry x="40" y="710" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_db_intentos" value="¿Supera 3 intentos?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#22c55e;strokeWidth=2;fontColor=#14532d;fontStyle=1;fontSize=11;shadow=1;" parent="lane_db" vertex="1">
+          <mxGeometry x="105" y="780" width="90" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="node_db_set_bloq" value="Establecer bloqueo + 15 min" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#22c55e;strokeWidth=1.5;fontColor=#14532d;fontSize=12;shadow=1;" parent="lane_db" vertex="1">
+          <mxGeometry x="40" y="630" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_db_chk_perf" value="¿Existe perfil y rol válido?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#22c55e;strokeWidth=2;fontColor=#14532d;fontStyle=1;fontSize=11;shadow=1;" parent="lane_db" vertex="1">
+          <mxGeometry x="105" y="860" width="90" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="node_rpc_reset" value="RPC: reset_failed_login_attempts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#22c55e;strokeWidth=1.5;fontColor=#14532d;fontSize=12;shadow=1;" parent="lane_db" vertex="1">
+          <mxGeometry x="40" y="950" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="node_sb_auth" value="Autenticar signInWithPassword" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#f97316;strokeWidth=1.5;fontColor=#7c2d12;fontSize=12;shadow=1;" parent="lane_supabase" vertex="1">
+          <mxGeometry x="40" y="470" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_100" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_start" target="node_input" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_101" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_input" target="node_val" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_102" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_val" target="node_val_dec" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_103" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_val_dec" target="node_val_err" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_104" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_val_err" target="node_input" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_105" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_val_dec" target="node_send" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_106" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_send" target="node_chk_bloq" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_107" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_chk_bloq" target="node_db_bloq" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_108" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_db_bloq" target="node_calc_time" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_109" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_calc_time" target="node_err_bloq" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_110" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_db_bloq" target="node_sb_auth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_111" value="Error red" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_sb_auth" target="node_err_conn" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_112" value="Error credenciales" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_sb_auth" target="node_fail_login" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_113" value="Éxito" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_sb_auth" target="node_chk_perf" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_114" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_fail_login" target="node_rpc_fail" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_115" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_rpc_fail" target="node_db_intentos" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_116" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_db_intentos" target="node_err_cred" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_117" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_db_intentos" target="node_db_set_bloq" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_118" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_db_set_bloq" target="node_timer" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_119" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_chk_perf" target="node_db_chk_perf" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_120" value="No/Inválido" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_db_chk_perf" target="node_err_perf" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_121" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_db_chk_perf" target="node_rpc_reset" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_122" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_rpc_reset" target="node_redir" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_123" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#64748b;strokeWidth=1.5;fontSize=11;fontColor=#334155;labelBackgroundColor=#ffffff;" parent="1" source="node_redir" target="node_end" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
