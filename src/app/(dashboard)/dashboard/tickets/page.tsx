@@ -20,7 +20,8 @@ import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
 import { Incidencia, CategoriaIncidencia, PrioridadIncidencia } from '@/types/incidencias';
-import { consultarIncidenciasAction, registrarIncidenciaAction } from '@/actions/incidenciasActions';
+import { consultarIncidenciasAction, registrarIncidenciaAction, actualizarEstadoTicketAction, obtenerHistorialTicketAction } from '@/actions/incidenciasActions';
+import { EstadoIncidencia, transicionesPermitidas } from '@/types/incidencias';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,75 @@ export default function TicketsPage() {
 
   // Estado Modal Detalle Ticket
   const [selectedTicket, setSelectedTicket] = useState<Incidencia | null>(null);
+
+  // Estado Historial del Ticket Seleccionado
+  const [ticketHistory, setTicketHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusUpdateError, setStatusUpdateError] = useState('');
+  const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
+
+  // Carga del Historial cuando se selecciona un ticket
+  useEffect(() => {
+    if (!selectedTicket?.id_incidencia) {
+      setTicketHistory([]);
+      setStatusUpdateError('');
+      setStatusUpdateSuccess(false);
+      return;
+    }
+
+    const ticketId = selectedTicket.id_incidencia;
+
+    async function loadHistory() {
+      setLoadingHistory(true);
+      const result = await obtenerHistorialTicketAction(ticketId);
+      if (result.success) {
+        setTicketHistory(result.data || []);
+      } else {
+        console.error('Error cargando historial:', result.error);
+      }
+      setLoadingHistory(false);
+    }
+
+    loadHistory();
+  }, [selectedTicket]);
+
+  // Manejo de actualización de estado
+  const handleUpdateStatus = async (nuevoEstado: EstadoIncidencia) => {
+    if (!selectedTicket || !currentUser?.id_auth_supabase) return;
+    setUpdatingStatus(true);
+    setStatusUpdateError('');
+    setStatusUpdateSuccess(false);
+
+    const result = await actualizarEstadoTicketAction(
+      selectedTicket.id_incidencia,
+      nuevoEstado,
+      currentUser.id_auth_supabase
+    );
+
+    if (result.success && result.data) {
+      setStatusUpdateSuccess(true);
+      
+      const updatedTicket = { ...selectedTicket, estado: nuevoEstado };
+      setSelectedTicket(updatedTicket);
+      
+      setTickets((prev) =>
+        prev.map((t) => (t.id_incidencia === selectedTicket.id_incidencia ? { ...t, estado: nuevoEstado } : t))
+      );
+
+      const histResult = await obtenerHistorialTicketAction(selectedTicket.id_incidencia);
+      if (histResult.success) {
+        setTicketHistory(histResult.data || []);
+      }
+
+      setTimeout(() => {
+        setStatusUpdateSuccess(false);
+      }, 2500);
+    } else {
+      setStatusUpdateError(result.error || 'Ocurrió un error al actualizar el estado');
+    }
+    setUpdatingStatus(false);
+  };
 
   // Carga de Sesión
   useEffect(() => {
@@ -658,6 +728,93 @@ export default function TicketsPage() {
                 <p className="text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-4 leading-relaxed whitespace-pre-wrap">
                   {selectedTicket.descripcion}
                 </p>
+              </div>
+
+              {/* Gestión de Estado (Técnicos y Jefes de TI) */}
+              {(currentUser?.id_rol === 1 || currentUser?.id_rol === 2) && (
+                <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Gestión de Estado
+                  </span>
+                  
+                  {statusUpdateSuccess && (
+                    <div className="mb-3 p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 text-xs flex items-center gap-2">
+                      <FaCheckCircle className="text-emerald-500 shrink-0" />
+                      <span>¡Estado del ticket actualizado con éxito!</span>
+                    </div>
+                  )}
+
+                  {statusUpdateError && (
+                    <div className="mb-3 p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 text-xs flex items-center gap-2">
+                      <FaExclamationTriangle className="text-red-500 shrink-0" />
+                      <span>{statusUpdateError}</span>
+                    </div>
+                  )}
+
+                  {selectedTicket.estado === 'cerrado' ? (
+                    <div className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block"></span>
+                      Este ticket se encuentra Cerrado y no admite más transiciones de estado.
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-slate-500 mr-2 font-medium">Cambiar a:</span>
+                      {transicionesPermitidas[selectedTicket.estado]?.map((nextState) => (
+                        <button
+                          key={nextState}
+                          type="button"
+                          disabled={updatingStatus}
+                          onClick={() => handleUpdateStatus(nextState)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 border hover:shadow-sm ${
+                            nextState === 'en_progreso' ? 'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100' :
+                            nextState === 'resuelto' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' :
+                            nextState === 'cerrado' ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200' :
+                            nextState === 'abierto' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' :
+                            'bg-slate-50 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          {updatingStatus ? <FaSpinner className="animate-spin text-xs" /> : null}
+                          {getStatusLabel(nextState)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Timeline de Historial de Cambios (Criterio de aceptación 4) */}
+              <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+                  Historial de Cambios de Estado
+                </span>
+                
+                {loadingHistory ? (
+                  <div className="flex justify-center items-center py-4">
+                    <FaSpinner className="animate-spin text-blue-600 text-sm" />
+                  </div>
+                ) : ticketHistory.length === 0 ? (
+                  <div className="text-xs text-slate-400 italic">
+                    No se registran cambios de estado previos para este ticket.
+                  </div>
+                ) : (
+                  <div className="relative pl-4 border-l border-slate-200 space-y-4">
+                    {ticketHistory.map((hist) => (
+                      <div key={hist.id_historial} className="relative">
+                        {/* Dot indicador */}
+                        <span className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white bg-blue-500 shadow-sm"></span>
+                        
+                        <div className="text-xs">
+                          <span className="font-bold text-slate-700">
+                            Transición: {getStatusLabel(hist.estado_anterior)} ➔ {getStatusLabel(hist.estado_nuevo)}
+                          </span>
+                          <span className="block text-[10px] text-slate-400 mt-0.5">
+                            Por: {hist.responsable ? `${hist.responsable.nombre} ${hist.responsable.apellido}` : 'Sistema'} — {formatLongDate(hist.creado_en)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Detalles Adicionales */}

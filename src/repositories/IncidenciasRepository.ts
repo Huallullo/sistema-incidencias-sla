@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabaseClient';
+import { supabase as browserClient } from '@/lib/supabaseClient';
+import { getSupabaseServerClient } from '@/lib/supabaseServer';
 import { Incidencia } from '@/types/incidencias';
 
 export class IncidenciasRepository {
@@ -13,7 +14,8 @@ export class IncidenciasRepository {
     creado_por: string;
   }): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
     try {
-      const { data: insertedData, error } = await supabase
+      const client = await getSupabaseServerClient();
+      const { data: insertedData, error } = await client
         .from('incidencias')
         .insert({
           titulo: data.titulo,
@@ -44,7 +46,8 @@ export class IncidenciasRepository {
    */
   static async getByCreadoPor(creadoPor: string): Promise<{ success: boolean; data?: Incidencia[]; error?: string }> {
     try {
-      const { data, error } = await supabase
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
         .from('incidencias')
         .select(`
           *,
@@ -72,7 +75,8 @@ export class IncidenciasRepository {
    */
   static async getAll(): Promise<{ success: boolean; data?: Incidencia[]; error?: string }> {
     try {
-      const { data, error } = await supabase
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
         .from('incidencias')
         .select(`
           *,
@@ -110,7 +114,8 @@ export class IncidenciasRepository {
     }
   ): Promise<{ success: boolean; data?: Incidencia[]; error?: string }> {
     try {
-      let query = supabase
+      const client = await getSupabaseServerClient();
+      let query = client
         .from('incidencias')
         .select(`
           *,
@@ -142,7 +147,6 @@ export class IncidenciasRepository {
         query = query.gte('creado_en', filtros.fechaInicio);
       }
       if (filtros.fechaFin) {
-        // Para incluir todo el día final, podemos usar la comparación hasta el final del día
         query = query.lte('creado_en', filtros.fechaFin);
       }
 
@@ -166,6 +170,64 @@ export class IncidenciasRepository {
     } catch (err) {
       console.error('Exception in IncidenciasRepository.queryTickets:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error inesperado al realizar la consulta de incidencias';
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Obtiene una incidencia por su ID
+   */
+  static async getById(id: string): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
+    try {
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
+        .from('incidencias')
+        .select(`
+          *,
+          creador:perfiles!creado_por(nombre, apellido, id_auth_supabase, correo),
+          asignado:perfiles!asignado_a(nombre, apellido)
+        `)
+        .eq('id_incidencia', id)
+        .single();
+
+      if (error) {
+        console.error('Error in IncidenciasRepository.getById:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data as Incidencia };
+    } catch (err) {
+      console.error('Exception in IncidenciasRepository.getById:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error inesperado al obtener la incidencia';
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Actualiza el estado de una incidencia
+   */
+  static async updateEstado(id: string, nuevoEstado: string): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
+    try {
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
+        .from('incidencias')
+        .update({
+          estado: nuevoEstado,
+          actualizado_en: new Date().toISOString()
+        })
+        .eq('id_incidencia', id)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error in IncidenciasRepository.updateEstado:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data as Incidencia };
+    } catch (err) {
+      console.error('Exception in IncidenciasRepository.updateEstado:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error inesperado al actualizar el estado de la incidencia';
       return { success: false, error: errorMessage };
     }
   }

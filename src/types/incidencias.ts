@@ -16,7 +16,12 @@ export interface Incidencia {
   asignado_a?: string | null;
   creado_en: string;
   actualizado_en: string;
-  creador?: { nombre: string; apellido: string } | null;
+  creador?: {
+    nombre: string;
+    apellido: string;
+    id_auth_supabase?: string | null;
+    correo?: string | null;
+  } | null;
   asignado?: { nombre: string; apellido: string } | null;
 }
 
@@ -38,3 +43,35 @@ export const registroIncidenciaSchema = z.object({
 });
 
 export type IncidenciaInput = z.infer<typeof registroIncidenciaSchema>;
+
+export interface HistorialEstadoTicket {
+  id_historial: string;
+  id_incidencia: string;
+  estado_anterior: EstadoIncidencia;
+  estado_nuevo: EstadoIncidencia;
+  id_perfil_responsable: string;
+  creado_en: string;
+  // Campos del join con perfiles
+  responsable?: {
+    nombre: string;
+    apellido: string;
+  } | null;
+}
+
+export const transicionesPermitidas: Record<EstadoIncidencia, EstadoIncidencia[]> = {
+  abierto: ['en_progreso', 'cerrado'],
+  en_progreso: ['resuelto', 'abierto'],
+  resuelto: ['cerrado', 'en_progreso'],
+  cerrado: [],
+};
+
+export const transitionSchema = z.object({
+  estado_anterior: z.enum(['abierto', 'en_progreso', 'resuelto', 'cerrado']),
+  estado_nuevo: z.enum(['abierto', 'en_progreso', 'resuelto', 'cerrado']),
+}).refine((data) => {
+  if (data.estado_anterior === data.estado_nuevo) return false;
+  return transicionesPermitidas[data.estado_anterior].includes(data.estado_nuevo);
+}, {
+  message: 'Transición de estado inválida',
+});
+

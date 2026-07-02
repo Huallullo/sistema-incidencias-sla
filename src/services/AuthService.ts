@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabaseClient';
+import { supabase as browserClient } from '@/lib/supabaseClient';
+import { getSupabaseServerClient } from '@/lib/supabaseServer';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { LoginCredentials, AuthResponse, UserRole, FailedLoginResult } from '@/types/auth';
 
@@ -12,8 +13,9 @@ export class AuthService {
    */
   static async signIn(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      const client = await getSupabaseServerClient();
       // 1. Consultar estado de bloqueo en la base de datos antes de intentar autenticar
-      const { data: profile, error: profileErr } = await supabase
+      const { data: profile, error: profileErr } = await client
         .from('perfiles')
         .select('id_auth_supabase, fecha_bloqueo, intentos_fallidos, estado')
         .eq('correo', credentials.email)
@@ -45,7 +47,7 @@ export class AuthService {
       }
 
       // 2. Intentar autenticar con Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await client.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       });
@@ -85,7 +87,7 @@ export class AuthService {
         
         // Si el usuario no tiene perfil o rol asignado
         if (!role) {
-          await supabase.auth.signOut();
+          await client.auth.signOut();
           return {
             user: null,
             session: null,
@@ -129,7 +131,8 @@ export class AuthService {
    */
   static async signOut(): Promise<{ error?: string }> {
     try {
-      const { error } = await supabase.auth.signOut();
+      const client = await getSupabaseServerClient();
+      const { error } = await client.auth.signOut();
       if (error) {
         return { error: error.message };
       }
@@ -145,7 +148,8 @@ export class AuthService {
    */
   static async getSession() {
     try {
-      const { data } = await supabase.auth.getSession();
+      const client = await getSupabaseServerClient();
+      const { data } = await client.auth.getSession();
       return data.session;
     } catch (err) {
       console.error('Error getting session:', err);
@@ -175,7 +179,8 @@ export class AuthService {
    */
   static async handleFailedLogin(email: string): Promise<FailedLoginResult | null> {
     try {
-      const { data, error } = await supabase.rpc('handle_failed_login', {
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client.rpc('handle_failed_login', {
         user_email: email,
       });
 
@@ -196,7 +201,8 @@ export class AuthService {
    */
   static async resetFailedLoginAttempts(email: string): Promise<boolean> {
     try {
-      const { error } = await supabase.rpc('reset_failed_login_attempts', {
+      const client = await getSupabaseServerClient();
+      const { error } = await client.rpc('reset_failed_login_attempts', {
         user_email: email,
       });
 

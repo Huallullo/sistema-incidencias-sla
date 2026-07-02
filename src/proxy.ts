@@ -40,14 +40,14 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Obtener la sesión
-  const { data: { session } } = await supabase.auth.getSession();
+  // Obtener el usuario autenticado de forma segura (valida el JWT)
+  const { data: { user } } = await supabase.auth.getUser();
 
-  console.log(' Middleware - Sesión:', session ? ' Autenticado' : 'No autenticado');
+  console.log(' Middleware - Sesión:', user ? ' Autenticado' : 'No autenticado');
   console.log(' Cookies en request:', request.cookies.getAll().map(c => c.name));
 
-  // Si no hay sesión, redirigir al login
-  if (!session) {
+  // Si no hay usuario, redirigir al login
+  if (!user) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -55,7 +55,7 @@ export async function proxy(request: NextRequest) {
   const { data: perfil, error } = await supabase
     .from('perfiles')
     .select('id_rol, roles(nombre_rol)')
-    .eq('id_auth_supabase', session.user.id)
+    .eq('id_auth_supabase', user.id)
     .single();
 
   const roleData = perfil?.roles;
@@ -66,6 +66,13 @@ export async function proxy(request: NextRequest) {
     } else if (typeof roleData === 'object') {
       roleName = (roleData as any).nombre_rol || null;
     }
+  }
+
+  // Fallback seguro usando la columna id_rol (por si la política RLS de roles retorna null)
+  if (!roleName && perfil) {
+    if (perfil.id_rol === 1) roleName = 'jefe_ti';
+    else if (perfil.id_rol === 2) roleName = 'tecnico';
+    else if (perfil.id_rol === 3) roleName = 'usuario';
   }
 
   console.log('👤 Rol del usuario:', roleName, 'id_rol:', perfil?.id_rol, 'Error:', error);

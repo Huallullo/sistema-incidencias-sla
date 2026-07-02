@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabaseClient';
+import { supabase as browserClient } from '@/lib/supabaseClient';
+import { getSupabaseServerClient } from '@/lib/supabaseServer';
 import { UserRole, PerfilUsuario } from '@/types/auth';
 
 /**
@@ -63,7 +64,8 @@ export class PerfilesRepository {
    */
   static async getRoleByUserId(userId: string): Promise<UserRole | null> {
     try {
-      const { data, error } = await supabase
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
         .from('perfiles')
         .select('id_rol, roles(nombre_rol)')
         .eq('id_auth_supabase', userId)
@@ -100,7 +102,8 @@ export class PerfilesRepository {
    */
   static async getProfileByUserId(userId: string): Promise<PerfilUsuario | null> {
     try {
-      const { data, error } = await supabase
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
         .from('perfiles')
         .select('*, roles(nombre_rol)')
         .eq('id_auth_supabase', userId)
@@ -136,7 +139,8 @@ export class PerfilesRepository {
       if (role === 'jefe_ti') idRol = 1;
       else if (role === 'tecnico') idRol = 2;
 
-      const { data, error } = await supabase
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
         .from('perfiles')
         .insert({
           id_auth_supabase: userId,
@@ -197,7 +201,8 @@ export class PerfilesRepository {
         updateData.apellido = apellido;
       }
 
-      const { data, error } = await supabase
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
         .from('perfiles')
         .update(updateData)
         .eq('id_auth_supabase', userId)
@@ -217,5 +222,3 @@ export class PerfilesRepository {
     }
   }
 }
-
-

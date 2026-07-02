@@ -27,6 +27,7 @@ jest.mock('next/server', () => {
 });
 
 describe('Middleware de Seguridad y Control de Acceso', () => {
+  const mockGetUser = jest.fn();
   const mockGetSession = jest.fn();
   const mockSingle = jest.fn();
   const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
@@ -35,6 +36,7 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
 
   const mockSupabaseClient = {
     auth: {
+      getUser: mockGetUser,
       getSession: mockGetSession,
     },
     from: mockFrom,
@@ -61,8 +63,8 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
   };
 
   it('debe redirigir a /login si no hay una sesión activa', async () => {
-    mockGetSession.mockResolvedValue({
-      data: { session: null },
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
       error: null,
     });
 
@@ -83,11 +85,9 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
   });
 
   it('debe redirigir a /dashboard si la sesión es activa pero el rol no es jefe_ti', async () => {
-    mockGetSession.mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: {
-        session: {
-          user: { id: 'user-id-tecnico', email: 'tecnico@test.com' },
-        },
+        user: { id: 'user-id-tecnico', email: 'tecnico@test.com' },
       },
       error: null,
     });
@@ -116,11 +116,9 @@ describe('Middleware de Seguridad y Control de Acceso', () => {
   });
 
   it('debe permitir acceso y llamar a NextResponse.next() si la sesión es activa y el rol es jefe_ti', async () => {
-    mockGetSession.mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: {
-        session: {
-          user: { id: 'user-id-jefe', email: 'jefe@test.com' },
-        },
+        user: { id: 'user-id-jefe', email: 'jefe@test.com' },
       },
       error: null,
     });

@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabaseClient';
+import { supabase as browserClient } from '@/lib/supabaseClient';
+import { getSupabaseServerClient } from '@/lib/supabaseServer';
 import { generateTemporaryPassword } from '@/utils/security';
 import { UserRole, PerfilUsuario } from '@/types/auth';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
@@ -93,7 +94,8 @@ export class UsuariosService {
         };
       }
 
-      const { data: sessionData } = await supabase.auth.getSession();
+      const client = await getSupabaseServerClient();
+      const { data: sessionData } = await client.auth.getSession();
       const accessToken = sessionData.session?.access_token;
 
       if (!accessToken) {
@@ -163,7 +165,8 @@ export class UsuariosService {
       const to = from + limit - 1;
 
       // Iniciar consulta a la tabla 'perfiles' con join a 'roles'
-      let query = supabase
+      const client = await getSupabaseServerClient();
+      let query = client
         .from('perfiles')
         .select('id_perfil, id_auth_supabase, id_rol, correo, nombre, apellido, estado, intentos_fallidos, fecha_bloqueo, fecha_creacion, cargo, telefono_interno, roles(nombre_rol)', { count: 'exact' });
 
@@ -225,9 +228,10 @@ export class UsuariosService {
     }
   ): Promise<{ success: boolean; data?: PerfilUsuario; error?: string }> {
     try {
+      const client = await getSupabaseServerClient();
       // Validar duplicidad de correo si se está intentando cambiar
       if (profileData.correo) {
-        const { data: existing, error: checkError } = await supabase
+        const { data: existing, error: checkError } = await client
           .from('perfiles')
           .select('id_auth_supabase')
           .eq('correo', profileData.correo)
@@ -264,7 +268,6 @@ export class UsuariosService {
     redirectTo: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // Importación dinámica del server action para evitar problemas de compilación en cliente
       const { sendPasswordResetAction } = await import('@/actions/authActions');
       return await sendPasswordResetAction(email, redirectTo);
     } catch (err) {
@@ -318,7 +321,8 @@ export class UsuariosService {
    */
   static async updateUserPassword(password: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const client = await getSupabaseServerClient();
+      const { error } = await client.auth.updateUser({ password });
 
       if (error) {
         return { success: false, error: error.message };
@@ -334,6 +338,3 @@ export class UsuariosService {
     }
   }
 }
-
-
-

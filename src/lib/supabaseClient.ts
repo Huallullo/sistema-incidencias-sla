@@ -15,7 +15,15 @@ function getSupabaseClient(): SupabaseClient {
 
   const cookieStorage = {
     getItem: (key: string) => {
-      if (typeof document === 'undefined') return null;
+      if (typeof document === 'undefined') {
+        try {
+          const { cookies } = require('next/headers');
+          const cookieStore = cookies();
+          return cookieStore.get(key)?.value || null;
+        } catch (e) {
+          return null;
+        }
+      }
       const match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
       return match ? decodeURIComponent(match[2]) : null;
     },

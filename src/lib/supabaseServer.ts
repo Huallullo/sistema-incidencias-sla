@@ -1,28 +1,38 @@
-// src/lib/supabaseClient.ts
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { supabase as browserClient } from './supabaseClient';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-// Storage personalizado que guarda la sesión en cookies (en lugar de localStorage)
-const cookieStorage = {
-  getItem: (key: string) => {
-    if (typeof document === 'undefined') return null;
-    const match = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
-    return match ? decodeURIComponent(match[2]) : null;
-  },
-  setItem: (key: string, value: string) => {
-    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
-  },
-  removeItem: (key: string) => {
-    document.cookie = `${key}=; path=/; max-age=0`;
-  },
-};
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: cookieStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-  },
-});
+export async function getSupabaseServerClient() {
+  if (typeof window !== 'undefined') {
+    return browserClient;
+  }
+  
+  try {
+    // Importación dinámica en tiempo de ejecución para evitar errores de empaquetado en componentes de cliente
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    
+    return createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll().map((c) => ({ name: c.name, value: c.value }));
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set({ name, value, ...options })
+              );
+            } catch (error) {
+              // Ignorar errores al configurar cookies si se llama desde Server Components
+            }
+          },
+        },
+      }
+    );
+  } catch (e) {
+    // Fallback para pruebas unitarias en Jest o compilación estática
+    return browserClient;
+  }
+}
