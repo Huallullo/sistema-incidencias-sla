@@ -3,6 +3,8 @@
 import { IncidenciaInput, Incidencia, EstadoIncidencia, HistorialEstadoTicket } from '@/types/incidencias';
 import { IncidenciasService } from '@/services/IncidenciasService';
 import { HistorialEstadoTicketRepository } from '@/repositories/HistorialEstadoTicketRepository';
+import { UsuariosService } from '@/services/UsuariosService';
+import { PerfilUsuario } from '@/types/auth';
 
 /**
  * Server Action para registrar una nueva incidencia
@@ -97,6 +99,38 @@ export async function obtenerHistorialTicketAction(
     return await HistorialEstadoTicketRepository.getByIncidenciaId(incidenciaId);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al obtener el historial de la incidencia en el servidor';
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Server Action para obtener todos los técnicos registrados en el sistema
+ */
+export async function obtenerTecnicosAction(): Promise<{ success: boolean; data?: PerfilUsuario[]; error?: string }> {
+  try {
+    const res = await UsuariosService.getUsers({ rol: 'tecnico', limit: 100 });
+    if (res.success && res.data) {
+      return { success: true, data: res.data };
+    }
+    return { success: false, error: res.error || 'Error al obtener los técnicos' };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Error al obtener técnicos en el servidor';
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Server Action para asignar un técnico a una incidencia
+ */
+export async function asignarTecnicoAction(
+  incidenciaId: string,
+  tecnicoId: string | null,
+  userId: string
+): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
+  try {
+    return await IncidenciasService.asignarTecnico(incidenciaId, tecnicoId, userId);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Error al asignar el técnico en el servidor';
     return { success: false, error: errorMessage };
   }
 }

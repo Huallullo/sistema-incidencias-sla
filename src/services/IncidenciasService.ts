@@ -3,6 +3,7 @@ import { IncidenciasRepository } from '@/repositories/IncidenciasRepository';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { HistorialEstadoTicketRepository } from '@/repositories/HistorialEstadoTicketRepository';
 import { getSupabaseServerClient } from '@/lib/supabaseServer';
+import { translateError } from '@/utils/errorTranslator';
 
 export class IncidenciasService {
   /**
@@ -165,7 +166,7 @@ export class IncidenciasService {
       // 4. Actualizar el estado del ticket
       const updateResult = await IncidenciasRepository.updateEstado(incidenciaId, nuevoEstado);
       if (!updateResult.success || !updateResult.data) {
-        return { success: false, error: updateResult.error || 'Error al actualizar el estado del ticket' };
+        return { success: false, error: translateError(updateResult.error) };
       }
 
       // 5. Registrar en el historial de cambios de estado
@@ -214,7 +215,79 @@ export class IncidenciasService {
     } catch (err) {
       console.error('Exception in IncidenciasService.actualizarEstadoTicket:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error inesperado al actualizar el estado del ticket';
-      return { success: false, error: errorMessage };
+      return { success: false, error: translateError(errorMessage) };
+    }
+  }
+
+  /**
+   * Asigna un técnico a una incidencia (Solo Jefe de TI)
+   */
+  static async asignarTecnico(
+    incidenciaId: string,
+    tecnicoId: string | null,
+    authUserId: string
+  ): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
+    try {
+      if (!authUserId) {
+        return { success: false, error: 'Sesión no válida. Inicie sesión nuevamente.' };
+      }
+
+      // 1. Validar el rol del usuario asignador (debe ser Jefe de TI, id_rol = 1)
+      const profile = await PerfilesRepository.getProfileByUserId(authUserId);
+      if (!profile) {
+        return { success: false, error: 'No se encontró un perfil asociado a su cuenta' };
+      }
+
+      if (profile.id_rol !== 1) {
+        return { success: false, error: 'Solo el Jefe de TI puede asignar técnicos a una incidencia.' };
+      }
+
+      // 2. Si se especifica un técnico, verificar que su perfil tenga rol de técnico (id_rol = 2)
+      if (tecnicoId) {
+        const tecnicoProfile = await PerfilesRepository.getProfileById(tecnicoId);
+        if (!tecnicoProfile) {
+          return { success: false, error: 'El técnico seleccionado no existe.' };
+        }
+        if (tecnicoProfile.id_rol !== 2) {
+          return { success: false, error: 'El usuario seleccionado no tiene el rol de Técnico.' };
+        }
+      }
+
+      // 3. Ejecutar la asignación
+      const assignResult = await IncidenciasRepository.updateAsignacion(incidenciaId, tecnicoId);
+      if (!assignResult.success || !assignResult.data) {
+        return { success: false, error: translateError(assignResult.error) };
+      }
+
+      // 4. Notificar al técnico asignado (si aplica)
+      if (tecnicoId && assignResult.data) {
+        const tecnicoProfile = await PerfilesRepository.getProfileById(tecnicoId);
+        if (tecnicoProfile && tecnicoProfile.id_auth_supabase) {
+          const client = await getSupabaseServerClient();
+          const ticket = assignResult.data;
+          const mailBody = `Hola ${tecnicoProfile.nombre},\n\nTe informamos que se te ha asignado el ticket de incidencia con código #${ticket.codigo_ticket.substring(4)} ("${ticket.titulo}").\n\nPor favor, ingresa al sistema para revisar el detalle y comenzar su atención.\n\nSaludos,\nEquipo de Soporte de TI.`;
+
+          const { error: logError } = await client
+            .from('email_logs')
+            .insert({
+              user_id: tecnicoProfile.id_auth_supabase,
+              email_destino: tecnicoProfile.correo || 'tecnico@empresa.pe',
+              asunto: `Asignación de ticket #${ticket.codigo_ticket.substring(4)}`,
+              cuerpo: mailBody,
+              estado: 'pendiente',
+            });
+
+          if (logError) {
+            console.error('Warning: Failed to queue assignee email notification:', logError);
+          }
+        }
+      }
+
+      return { success: true, data: assignResult.data };
+    } catch (err) {
+      console.error('Exception in IncidenciasService.asignarTecnico:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error inesperado al asignar el técnico';
+      return { success: false, error: translateError(errorMessage) };
     }
   }
 }

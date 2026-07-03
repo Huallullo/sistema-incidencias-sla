@@ -221,4 +221,28 @@ export class PerfilesRepository {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Obtiene el perfil de un usuario por su id_perfil interno
+   */
+  static async getProfileById(perfilId: string): Promise<PerfilUsuario | null> {
+    try {
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
+        .from('perfiles')
+        .select('*, roles(nombre_rol)')
+        .eq('id_perfil', perfilId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile by id:', error);
+        return null;
+      }
+
+      return mapDbToPerfilUsuario(data);
+    } catch (err) {
+      console.error('Exception in getProfileById:', err);
+      return null;
+    }
+  }
 }

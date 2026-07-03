@@ -128,53 +128,59 @@ export default function DashboardLayout({
           </div>
 
           {/* SECCIÓN: GESTIÓN */}
-          <div>
-            <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Gestión
-            </p>
-            <ul className="space-y-1">
-              <li>
-                <button
-                  onClick={() => router.push('/admin/usuarios')}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
-                    pathname?.startsWith('/admin/usuarios')
-                      ? 'bg-blue-50 text-blue-600 font-bold'
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <LuUsers className="text-lg shrink-0" />
-                  <span>Usuario</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => alert('Gestión de Equipos en desarrollo')}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
-                >
-                  <LuMonitor className="text-lg shrink-0" />
-                  <span>Equipos</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => alert('Configuración de Prioridades SLA en desarrollo')}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
-                >
-                  <LuHistory className="text-lg shrink-0" />
-                  <span>Prioridades SLA</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => alert('Disponibilidad de Técnicos en desarrollo')}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
-                >
-                  <LuCalendarClock className="text-lg shrink-0" />
-                  <span>Disponibilidad</span>
-                </button>
-              </li>
-            </ul>
-          </div>
+          {currentUser?.rol === 'jefe_ti' && (
+            <div>
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                Gestión
+              </p>
+              <ul className="space-y-1">
+                <li>
+                  <button
+                    onClick={() => router.push('/admin/usuarios')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/usuarios')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LuUsers className="text-lg shrink-0" />
+                    <span>Usuario</span>
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => alert('Gestión de Equipos en desarrollo')}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                  >
+                    <LuMonitor className="text-lg shrink-0" />
+                    <span>Equipos</span>
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => router.push('/admin/prioridades-sla')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/prioridades-sla')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LuHistory className="text-lg shrink-0" />
+                    <span>Prioridades SLA</span>
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => alert('Disponibilidad de Técnicos en desarrollo')}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                  >
+                    <LuCalendarClock className="text-lg shrink-0" />
+                    <span>Disponibilidad</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          )}
 
           {/* SECCIÓN: CALIDAD */}
           <div>
@@ -202,8 +208,12 @@ export default function DashboardLayout({
               </li>
               <li>
                 <button
-                  onClick={() => alert('Base de conocimiento en desarrollo')}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                  onClick={() => router.push('/dashboard/conocimiento')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                    pathname === '/dashboard/conocimiento'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
                 >
                   <LuLibrary className="text-lg shrink-0" />
                   <span>Base de conocimiento</span>
@@ -248,12 +258,16 @@ export default function DashboardLayout({
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => alert('Disponibilidad de Horarios en desarrollo')}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                <button
+                  onClick={() => router.push('/dashboard/conocimiento')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                    pathname === '/dashboard/conocimiento'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
                 >
-                  <LuCalendarClock className="text-lg shrink-0" />
-                  <span>Disponibilidad</span>
+                  <LuLibrary className="text-lg shrink-0" />
+                  <span>Base de conocimiento</span>
                 </button>
               </li>
             </ul>
@@ -284,16 +298,27 @@ export default function DashboardLayout({
               <li>
                 <button
                   onClick={() => router.push('/dashboard/tickets')}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname === '/dashboard/tickets'
                       ? 'bg-blue-50 text-blue-600 font-bold'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <LuTicket className="text-lg shrink-0" />
-                    <span>Mis Reportes</span>
-                  </div>
+                  <LuTicket className="text-lg shrink-0" />
+                  <span>Mis Reportes</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => router.push('/dashboard/conocimiento')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                    pathname === '/dashboard/conocimiento'
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <LuLibrary className="text-lg shrink-0" />
+                  <span>Base de conocimiento</span>
                 </button>
               </li>
             </ul>

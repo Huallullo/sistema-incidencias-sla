@@ -20,7 +20,14 @@ import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
 import { Incidencia, CategoriaIncidencia, PrioridadIncidencia } from '@/types/incidencias';
-import { consultarIncidenciasAction, registrarIncidenciaAction, actualizarEstadoTicketAction, obtenerHistorialTicketAction } from '@/actions/incidenciasActions';
+import {
+  consultarIncidenciasAction,
+  registrarIncidenciaAction,
+  actualizarEstadoTicketAction,
+  obtenerHistorialTicketAction,
+  obtenerTecnicosAction,
+  asignarTecnicoAction,
+} from '@/actions/incidenciasActions';
 import { EstadoIncidencia, transicionesPermitidas } from '@/types/incidencias';
 
 export const dynamic = 'force-dynamic';
@@ -61,6 +68,12 @@ export default function TicketsPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusUpdateError, setStatusUpdateError] = useState('');
   const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
+
+  // Estado Asignación de Técnicos
+  const [tecnicos, setTecnicos] = useState<PerfilUsuario[]>([]);
+  const [updatingAssignee, setUpdatingAssignee] = useState(false);
+  const [assigneeError, setAssigneeError] = useState('');
+  const [assigneeSuccess, setAssigneeSuccess] = useState(false);
 
   // Carga del Historial cuando se selecciona un ticket
   useEffect(() => {
@@ -124,6 +137,48 @@ export default function TicketsPage() {
     setUpdatingStatus(false);
   };
 
+  // Manejo de actualización de asignación
+  const handleAssignTecnico = async (tecnicoId: string | null) => {
+    if (!selectedTicket || !currentUser?.id_auth_supabase) return;
+    setUpdatingAssignee(true);
+    setAssigneeError('');
+    setAssigneeSuccess(false);
+
+    const result = await asignarTecnicoAction(
+      selectedTicket.id_incidencia,
+      tecnicoId,
+      currentUser.id_auth_supabase
+    );
+
+    if (result.success && result.data) {
+      setAssigneeSuccess(true);
+      
+      // Actualizar ticket seleccionado en UI
+      const updatedTicket = {
+        ...selectedTicket,
+        asignado_a: tecnicoId,
+        asignado: tecnicoId ? tecnicos.find(t => t.id_perfil === tecnicoId) || null : null
+      };
+      setSelectedTicket(updatedTicket as any);
+
+      // Actualizar lista de tickets
+      setTickets((prev) =>
+        prev.map((t) => (t.id_incidencia === selectedTicket.id_incidencia ? { 
+          ...t, 
+          asignado_a: tecnicoId, 
+          asignado: tecnicoId ? { nombre: tecnicos.find(x => x.id_perfil === tecnicoId)?.nombre || '', apellido: tecnicos.find(x => x.id_perfil === tecnicoId)?.apellido || '' } : null 
+        } : t))
+      );
+
+      setTimeout(() => {
+        setAssigneeSuccess(false);
+      }, 2500);
+    } else {
+      setAssigneeError(result.error || 'Ocurrió un error al asignar el técnico');
+    }
+    setUpdatingAssignee(false);
+  };
+
   // Carga de Sesión
   useEffect(() => {
     async function loadSession() {
@@ -150,6 +205,17 @@ export default function TicketsPage() {
     }
     loadSession();
   }, [router]);
+
+  // Carga de Técnicos para el dropdown de asignación
+  useEffect(() => {
+    async function loadTecnicos() {
+      const res = await obtenerTecnicosAction();
+      if (res.success && res.data) {
+        setTecnicos(res.data);
+      }
+    }
+    loadTecnicos();
+  }, []);
 
   // Carga y Filtrado de Tickets
   useEffect(() => {
@@ -777,6 +843,57 @@ export default function TicketsPage() {
                           {getStatusLabel(nextState)}
                         </button>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Asignación de Técnico (Técnicos y Jefes de TI) */}
+              {(currentUser?.id_rol === 1 || currentUser?.id_rol === 2) && (
+                <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    Técnico Responsable de Atención
+                  </span>
+
+                  {assigneeSuccess && (
+                    <div className="mb-3 p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 text-xs flex items-center gap-2">
+                      <FaCheckCircle className="text-emerald-500 shrink-0" />
+                      <span>¡Técnico asignado con éxito!</span>
+                    </div>
+                  )}
+
+                  {assigneeError && (
+                    <div className="mb-3 p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 text-xs flex items-center gap-2">
+                      <FaExclamationTriangle className="text-red-500 shrink-0" />
+                      <span>{assigneeError}</span>
+                    </div>
+                  )}
+
+                  {currentUser?.id_rol === 1 ? (
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={selectedTicket.asignado_a || ''}
+                        onChange={(e) => handleAssignTecnico(e.target.value || null)}
+                        disabled={updatingAssignee || selectedTicket.estado === 'cerrado'}
+                        className="flex-1 px-3 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-60"
+                      >
+                        <option value="">Sin asignar / Pendiente</option>
+                        {tecnicos.map((tec) => (
+                          <option key={tec.id_perfil} value={tec.id_perfil}>
+                            {tec.nombre} {tec.apellido}
+                          </option>
+                        ))}
+                      </select>
+                      {updatingAssignee && <FaSpinner className="animate-spin text-blue-600 text-xs shrink-0" />}
+                    </div>
+                  ) : (
+                    <div className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                      <FaUser size={12} className="text-slate-400" />
+                      <span>
+                        {selectedTicket.asignado
+                          ? `${selectedTicket.asignado.nombre} ${selectedTicket.asignado.apellido}`
+                          : 'Sin asignar / Pendiente'}
+                      </span>
                     </div>
                   )}
                 </div>

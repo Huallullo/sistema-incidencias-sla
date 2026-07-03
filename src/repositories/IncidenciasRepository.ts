@@ -231,4 +231,40 @@ export class IncidenciasRepository {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Actualiza el técnico asignado a una incidencia
+   */
+  static async updateAsignacion(
+    id: string,
+    asignadoA: string | null
+  ): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
+    try {
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
+        .from('incidencias')
+        .update({
+          asignado_a: asignadoA,
+          actualizado_en: new Date().toISOString()
+        })
+        .eq('id_incidencia', id)
+        .select(`
+          *,
+          creador:perfiles!creado_por(nombre, apellido, id_auth_supabase, correo),
+          asignado:perfiles!asignado_a(nombre, apellido)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error in IncidenciasRepository.updateAsignacion:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data as Incidencia };
+    } catch (err) {
+      console.error('Exception in IncidenciasRepository.updateAsignacion:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error inesperado al actualizar la asignación de la incidencia';
+      return { success: false, error: errorMessage };
+    }
+  }
 }
