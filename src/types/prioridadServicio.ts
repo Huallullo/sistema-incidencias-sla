@@ -77,7 +77,7 @@ export function formatMinutos(min: number): string {
     return dias === 1 ? '1 día' : `${dias} días`;
   }
   
-  let parts: string[] = [];
+  const parts: string[] = [];
   parts.push(dias === 1 ? '1 día' : `${dias} días`);
   if (horasRestantes > 0) {
     parts.push(horasRestantes === 1 ? '1 hora' : `${horasRestantes} horas`);

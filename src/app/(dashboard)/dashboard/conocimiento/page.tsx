@@ -9,7 +9,6 @@ import {
   LuLibrary,
   LuX,
   LuUser,
-  LuTag,
   LuLink,
   LuClock,
   LuTriangle,
