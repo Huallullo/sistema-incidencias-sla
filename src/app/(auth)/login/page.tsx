@@ -79,8 +79,21 @@ export default function LoginPage() {
         return;
       }
 
-      // 4. Redirigir al panel de control principal
-      router.push('/dashboard');
+      // 4. Obtener perfil para determinar rol y redirigir DIRECTAMENTE
+      //    en UN solo salto → elimina el flash visual /dashboard → /admin/dashboard
+      try {
+        const { PerfilesRepository } = await import('@/repositories/PerfilesRepository');
+        const profile = await PerfilesRepository.getProfileByUserId(response.user.id);
+
+        if (profile?.rol === 'jefe_ti') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/dashboard');
+        }
+      } catch {
+        // Fallback si falla la carga del perfil
+        router.push('/dashboard');
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
