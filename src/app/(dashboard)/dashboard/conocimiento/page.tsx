@@ -37,8 +37,9 @@ export default function ConocimientoPage() {
   const [selectedArticle, setSelectedArticle] = useState<ArticuloConocimiento | null>(null);
 
   // Estados del Buscador y Filtros
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [isSearching, setIsSearching] = useState(false); // true durante debounce activo
 
   // Estados del Formulario (Creación)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,10 +85,13 @@ export default function ConocimientoPage() {
     loadSession();
   }, [router]);
 
-  // Carga de Artículos (con búsqueda)
+  // Carga de Artículos (con búsqueda y debounce)
   useEffect(() => {
     if (loading) return;
-    
+
+    // Activar indicador de búsqueda inmediatamente al cambiar filtros
+    setIsSearching(true);
+
     async function fetchArticulos() {
       setLoadingArticulos(true);
       const res = await obtenerArticulosAction({
@@ -98,6 +102,7 @@ export default function ConocimientoPage() {
         setArticulos(res.data);
       }
       setLoadingArticulos(false);
+      setIsSearching(false);
     }
 
     const timer = setTimeout(() => {
@@ -278,16 +283,30 @@ export default function ConocimientoPage() {
         <div className="relative flex-1 w-full">
           <LuSearch className="absolute left-3.5 top-3 text-slate-400 text-lg" />
           <input
+            id="knowledge-search"
             type="text"
             placeholder="Buscar por título, problema o solución..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400 text-slate-700"
+            className="w-full pl-11 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400 text-slate-700"
           />
+          {isSearching && (
+            <span className="absolute right-3.5 top-3 text-[10px] font-semibold text-blue-500 animate-pulse">Buscando...</span>
+          )}
+          {searchQuery && !isSearching && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-2.5 p-0.5 text-slate-400 hover:text-slate-600 transition"
+              aria-label="Limpiar búsqueda"
+            >
+              <LuX size={16} />
+            </button>
+          )}
         </div>
 
         <div className="w-full md:w-56">
           <select
+            id="knowledge-category-filter"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
@@ -301,15 +320,75 @@ export default function ConocimientoPage() {
         </div>
       </div>
 
+      {/* Conteo de resultados */}
+      {!loadingArticulos && !isSearching && (
+        <div className="flex items-center justify-between text-xs text-slate-500">
+          <span>
+            {articulos.length === 0
+              ? 'Sin resultados'
+              : articulos.length === 1
+              ? '1 artículo encontrado'
+              : `${articulos.length} artículos encontrados`}
+            {(searchQuery || selectedCategory) && (
+              <span className="ml-1 text-blue-600 font-medium">
+                {searchQuery ? `para "${searchQuery}"` : ''}
+                {searchQuery && selectedCategory ? ' en ' : ''}
+                {selectedCategory ? getCategoriaLabel(selectedCategory) : ''}
+              </span>
+            )}
+          </span>
+          {(searchQuery || selectedCategory) && (
+            <button
+              onClick={() => { setSearchQuery(''); setSelectedCategory(''); }}
+              className="text-slate-400 hover:text-slate-600 underline transition text-[11px]"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Listado de Artículos */}
       {loadingArticulos ? (
-        <div className="flex justify-center items-center py-20">
-          <FaSpinner className="animate-spin text-blue-600 text-3xl" />
+        // Skeleton loader – HU-011: feedback visual durante búsqueda
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {[1,2,3,4].map((n) => (
+            <div key={n} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm animate-pulse">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-5 w-20 bg-slate-200 rounded-lg" />
+                <div className="h-5 w-16 bg-slate-100 rounded-lg ml-auto" />
+              </div>
+              <div className="h-4 w-3/4 bg-slate-200 rounded mb-2" />
+              <div className="h-3 w-full bg-slate-100 rounded mb-1" />
+              <div className="h-3 w-5/6 bg-slate-100 rounded mb-1" />
+              <div className="h-3 w-2/3 bg-slate-100 rounded mb-4" />
+              <div className="flex justify-between border-t border-slate-100 pt-3">
+                <div className="h-3 w-24 bg-slate-100 rounded" />
+                <div className="h-3 w-20 bg-slate-100 rounded" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : articulos.length === 0 ? (
-        <div className="bg-white border border-slate-150 rounded-2xl p-12 text-center text-slate-400 italic shadow-sm flex flex-col items-center justify-center gap-3">
-          <LuBookOpen size={40} className="text-slate-300" />
-          <span>No se encontraron artículos de conocimiento registrados con los filtros aplicados.</span>
+        <div className="bg-white border border-slate-150 rounded-2xl p-12 text-center text-slate-400 shadow-sm flex flex-col items-center justify-center gap-3">
+          <LuBookOpen size={44} className="text-slate-300" />
+          {searchQuery || selectedCategory ? (
+            <>
+              <p className="font-semibold text-slate-500 text-sm">Sin resultados para este filtro</p>
+              <p className="text-xs text-slate-400 max-w-xs">
+                No se encontraron artículos{searchQuery ? ` que contengan &quot;${searchQuery}&quot;` : ''}
+                {selectedCategory ? ` en la categoría ${getCategoriaLabel(selectedCategory)}` : ''}.
+                Intenta con otro término o limpia los filtros.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-semibold text-slate-500 text-sm">La base de conocimiento está vacía</p>
+              <p className="text-xs text-slate-400 max-w-xs">
+                Aún no hay artículos registrados. Los Técnicos y Jefes de TI pueden documentar soluciones.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -608,15 +687,22 @@ export default function ConocimientoPage() {
                 </p>
               </div>
 
-              {/* Solución / Pasos */}
-              <div className="space-y-2 border border-slate-200 p-4 bg-slate-50/20 rounded-2xl">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              {/* Solución / Pasos – renderiza como lista numerada si hay saltos de línea */}
+              <div className="space-y-2 border border-emerald-100 p-4 bg-emerald-50/20 rounded-2xl">
+                <h4 className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
                   <LuFileText size={13} className="text-emerald-500 shrink-0" />
                   Pasos de la Solución Aplicada
                 </h4>
-                <p className="text-slate-700 font-medium leading-relaxed whitespace-pre-wrap bg-white border border-slate-100 p-3.5 rounded-xl">
-                  {selectedArticle.solucion_pasos}
-                </p>
+                <div className="bg-white border border-slate-100 p-3.5 rounded-xl space-y-1.5">
+                  {selectedArticle.solucion_pasos.split('\n').filter(l => l.trim()).map((line, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-slate-700 font-medium leading-relaxed">
+                      <span className="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs">{line.replace(/^\d+[.)\-\s]+/, '')}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
