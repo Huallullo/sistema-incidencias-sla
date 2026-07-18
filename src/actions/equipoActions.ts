@@ -3,6 +3,8 @@
 import { RegistroEquipoInput, EquipoInformatico, ActualizarEquipoInput, HistorialEstadoEquipo } from '@/types/equipo';
 import { EquiposService } from '@/services/EquiposService';
 
+import { revalidatePath } from 'next/cache';
+
 /**
  * Server Action para registrar un nuevo equipo informático
  */
@@ -11,7 +13,13 @@ export async function registrarEquipoAction(
   userId: string
 ): Promise<{ success: boolean; data?: EquipoInformatico; error?: string }> {
   try {
-    return await EquiposService.registrarEquipo(input, userId);
+    const res = await EquiposService.registrarEquipo(input, userId);
+    if (res.success) {
+      revalidatePath('/admin/equipos');
+      revalidatePath('/dashboard/equipos');
+      revalidatePath('/admin/reporte-fallas');
+    }
+    return res;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al registrar el equipo en el servidor';
     return { success: false, error: errorMessage };
@@ -63,7 +71,13 @@ export async function actualizarEquipoAction(
   observacion?: string
 ): Promise<{ success: boolean; data?: EquipoInformatico; error?: string }> {
   try {
-    return await EquiposService.actualizarEquipo(idEquipo, input, userId, observacion);
+    const res = await EquiposService.actualizarEquipo(idEquipo, input, userId, observacion);
+    if (res.success) {
+      revalidatePath('/admin/equipos');
+      revalidatePath('/dashboard/equipos');
+      revalidatePath('/admin/reporte-fallas');
+    }
+    return res;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al actualizar el equipo en el servidor';
     return { success: false, error: errorMessage };

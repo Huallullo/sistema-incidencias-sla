@@ -5,6 +5,7 @@ import { IncidenciasService } from '@/services/IncidenciasService';
 import { HistorialEstadoTicketRepository } from '@/repositories/HistorialEstadoTicketRepository';
 import { UsuariosService } from '@/services/UsuariosService';
 import { PerfilUsuario } from '@/types/auth';
+import { revalidatePath } from 'next/cache';
 
 /**
  * Server Action para registrar una nueva incidencia
@@ -14,7 +15,13 @@ export async function registrarIncidenciaAction(
   userId: string
 ): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
   try {
-    return await IncidenciasService.registrarIncidencia(input, userId);
+    const res = await IncidenciasService.registrarIncidencia(input, userId);
+    if (res.success) {
+      revalidatePath('/dashboard');
+      revalidatePath('/dashboard/tickets');
+      revalidatePath('/admin/dashboard');
+    }
+    return res;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al registrar incidencia en el servidor';
     return { success: false, error: errorMessage };
@@ -82,7 +89,13 @@ export async function actualizarEstadoTicketAction(
   userId: string
 ): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
   try {
-    return await IncidenciasService.actualizarEstadoTicket(incidenciaId, nuevoEstado, userId);
+    const res = await IncidenciasService.actualizarEstadoTicket(incidenciaId, nuevoEstado, userId);
+    if (res.success) {
+      revalidatePath('/dashboard');
+      revalidatePath('/dashboard/tickets');
+      revalidatePath('/admin/dashboard');
+    }
+    return res;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al actualizar el estado de la incidencia en el servidor';
     return { success: false, error: errorMessage };
@@ -128,7 +141,14 @@ export async function asignarTecnicoAction(
   userId: string
 ): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
   try {
-    return await IncidenciasService.asignarTecnico(incidenciaId, tecnicoId, userId);
+    const res = await IncidenciasService.asignarTecnico(incidenciaId, tecnicoId, userId);
+    if (res.success) {
+      revalidatePath('/dashboard');
+      revalidatePath('/dashboard/tickets');
+      revalidatePath('/admin/dashboard');
+      revalidatePath('/admin/reporte-carga');
+    }
+    return res;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al asignar el técnico en el servidor';
     return { success: false, error: errorMessage };
@@ -154,7 +174,14 @@ export async function cerrarTicketAuditadoAction(
       return { success: false, error: firstError };
     }
 
-    return await IncidenciasService.cerrarTicketAuditado(incidenciaId, observaciones, userId);
+    const res = await IncidenciasService.cerrarTicketAuditado(incidenciaId, observaciones, userId);
+    if (res.success) {
+      revalidatePath('/dashboard');
+      revalidatePath('/dashboard/tickets');
+      revalidatePath('/admin/dashboard');
+      revalidatePath('/admin/reporte-sla');
+    }
+    return res;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al auditar y cerrar la incidencia en el servidor';
     return { success: false, error: errorMessage };

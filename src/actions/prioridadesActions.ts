@@ -4,6 +4,8 @@ import { AuthService } from '@/services/AuthService';
 import { PrioridadesService } from '@/services/PrioridadesService';
 import { PrioridadInput, PrioridadServicio } from '@/types/prioridadServicio';
 
+import { revalidatePath } from 'next/cache';
+
 /**
  * Server Action: Registrar una nueva prioridad de servicio SLA
  * Solo accesible para el rol Jefe de TI
@@ -17,7 +19,11 @@ export async function registrarPrioridadAction(
       return { success: false, error: 'Sesión no válida. Por favor inicie sesión nuevamente.' };
     }
 
-    return await PrioridadesService.registrarPrioridad(input, session.user.id);
+    const res = await PrioridadesService.registrarPrioridad(input, session.user.id);
+    if (res.success) {
+      revalidatePath('/admin/prioridades-sla');
+    }
+    return res;
   } catch (err) {
     console.error('Exception in registrarPrioridadAction:', err);
     return { success: false, error: 'Error inesperado en el servidor.' };

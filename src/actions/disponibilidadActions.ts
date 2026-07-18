@@ -6,6 +6,7 @@ import {
   RegistroRangoDisponibilidadInput 
 } from '@/types/disponibilidad';
 import { DisponibilidadService } from '@/services/DisponibilidadService';
+import { revalidatePath } from 'next/cache';
 
 /**
  * Server Action para registrar disponibilidad individual (fecha única)
@@ -15,7 +16,13 @@ export async function registrarDisponibilidadAction(
   userId: string
 ): Promise<{ success: boolean; data?: DisponibilidadTecnico; error?: string }> {
   try {
-    return await DisponibilidadService.registrarDisponibilidad(userId, input);
+    const res = await DisponibilidadService.registrarDisponibilidad(userId, input);
+    if (res.success) {
+      revalidatePath('/admin/disponibilidad');
+      revalidatePath('/admin/dashboard');
+      revalidatePath('/dashboard');
+    }
+    return res;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error al registrar disponibilidad en el servidor';
     return { success: false, error: msg };
@@ -30,7 +37,13 @@ export async function registrarRangoDisponibilidadAction(
   userId: string
 ): Promise<{ success: boolean; count?: number; error?: string }> {
   try {
-    return await DisponibilidadService.registrarRangoDisponibilidad(userId, input);
+    const res = await DisponibilidadService.registrarRangoDisponibilidad(userId, input);
+    if (res.success) {
+      revalidatePath('/admin/disponibilidad');
+      revalidatePath('/admin/dashboard');
+      revalidatePath('/dashboard');
+    }
+    return res;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error al registrar rango de disponibilidad en el servidor';
     return { success: false, error: msg };
@@ -52,7 +65,13 @@ export async function actualizarDisponibilidadAction(
   userId: string
 ): Promise<{ success: boolean; data?: DisponibilidadTecnico; error?: string }> {
   try {
-    return await DisponibilidadService.actualizarDisponibilidad(userId, id, input);
+    const res = await DisponibilidadService.actualizarDisponibilidad(userId, id, input);
+    if (res.success) {
+      revalidatePath('/admin/disponibilidad');
+      revalidatePath('/admin/dashboard');
+      revalidatePath('/dashboard');
+    }
+    return res;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error al actualizar la disponibilidad en el servidor';
     return { success: false, error: msg };
@@ -67,7 +86,13 @@ export async function eliminarDisponibilidadAction(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    return await DisponibilidadService.eliminarDisponibilidad(userId, id);
+    const res = await DisponibilidadService.eliminarDisponibilidad(userId, id);
+    if (res.success) {
+      revalidatePath('/admin/disponibilidad');
+      revalidatePath('/admin/dashboard');
+      revalidatePath('/dashboard');
+    }
+    return res;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error al eliminar la disponibilidad en el servidor';
     return { success: false, error: msg };

@@ -10,6 +10,8 @@ import {
   consultaEvaluacionesFilterSchema 
 } from '@/types/evaluacion';
 
+import { revalidatePath } from 'next/cache';
+
 /**
  * Server Action para registrar una nueva evaluación de servicio
  */
@@ -25,7 +27,13 @@ export async function registrarEvaluacionAction(
       return { success: false, error: firstError };
     }
 
-    return await EvaluacionService.registrarEvaluacion(userId, validated.data);
+    const res = await EvaluacionService.registrarEvaluacion(userId, validated.data);
+    if (res.success) {
+      revalidatePath('/dashboard/tickets');
+      revalidatePath('/admin/evaluaciones');
+      revalidatePath('/admin/reporte-satisfaccion');
+    }
+    return res;
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error al registrar la evaluación en el servidor';
     return { success: false, error: msg };

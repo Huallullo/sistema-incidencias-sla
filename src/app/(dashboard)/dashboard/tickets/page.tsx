@@ -47,6 +47,7 @@ export default function TicketsPage() {
   const [tickets, setTickets] = useState<Incidencia[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Estados de Filtros
   const [filtroPill, setFiltroPill] = useState<'todos' | 'abierto' | 'en_progreso' | 'cerrado' | 'critica'>('todos');
@@ -143,6 +144,8 @@ export default function TicketsPage() {
         setEvalSuccess(true);
         setEvaluation(res.data);
         setEvalComment('');
+        setRefreshTrigger((prev) => prev + 1);
+        router.refresh();
       } else {
         setEvalError(res.error || 'Error al registrar la calificación.');
       }
@@ -205,6 +208,8 @@ export default function TicketsPage() {
       if (res.success && res.data) {
         setAuditSuccess(true);
         setAuditComments('');
+        setRefreshTrigger((prev) => prev + 1);
+        router.refresh();
         
         const fechaCierre = res.data.fecha_cierre;
         const cerradoPor = res.data.cerrado_por;
@@ -286,6 +291,8 @@ export default function TicketsPage() {
 
     if (result.success && result.data) {
       setStatusUpdateSuccess(true);
+      setRefreshTrigger((prev) => prev + 1);
+      router.refresh();
       
       const updatedTicket = { ...selectedTicket, estado: nuevoEstado };
       setSelectedTicket(updatedTicket);
@@ -323,6 +330,8 @@ export default function TicketsPage() {
 
     if (result.success && result.data) {
       setAssigneeSuccess(true);
+      setRefreshTrigger((prev) => prev + 1);
+      router.refresh();
       
       // Actualizar ticket seleccionado en UI
       const updatedTicket = {
@@ -431,7 +440,7 @@ export default function TicketsPage() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [currentUser, filtroPill, busqueda, categoria, prioridad, fechaInicio, fechaFin]);
+  }, [currentUser, filtroPill, busqueda, categoria, prioridad, fechaInicio, fechaFin, refreshTrigger]);
 
   // Manejo de envío de nuevo ticket
   const handleCreateTicket = async (e: React.FormEvent) => {
@@ -461,6 +470,8 @@ export default function TicketsPage() {
       
       // Forzar recarga de tickets
       setFiltroPill('todos');
+      setRefreshTrigger((prev) => prev + 1);
+      router.refresh();
       
       // Cerrar modal tras 2 segundos
       setTimeout(() => {

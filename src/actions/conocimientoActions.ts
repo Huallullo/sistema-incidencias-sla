@@ -4,6 +4,8 @@ import { ArticuloInput, ArticuloConocimiento } from '@/types/conocimiento';
 import { ConocimientoService } from '@/services/ConocimientoService';
 import { ArticuloConocimientoRepository } from '@/repositories/ArticuloConocimientoRepository';
 
+import { revalidatePath } from 'next/cache';
+
 /**
  * Server Action para registrar un nuevo artículo de conocimiento
  */
@@ -12,7 +14,12 @@ export async function registrarArticuloAction(
   userId: string
 ): Promise<{ success: boolean; data?: ArticuloConocimiento; error?: string }> {
   try {
-    return await ConocimientoService.registrarArticulo(input, userId);
+    const res = await ConocimientoService.registrarArticulo(input, userId);
+    if (res.success) {
+      revalidatePath('/dashboard/conocimiento');
+      revalidatePath('/admin/reporte-conocimiento');
+    }
+    return res;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al registrar el artículo en el servidor';
     return { success: false, error: errorMessage };
@@ -57,9 +64,14 @@ export async function registrarConsultaAction(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    return await ConocimientoService.registrarConsulta(idArticulo, userId);
+    const res = await ConocimientoService.registrarConsulta(idArticulo, userId);
+    if (res.success) {
+      revalidatePath('/dashboard/conocimiento');
+      revalidatePath('/admin/reporte-conocimiento');
+    }
+    return res;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Error al registrar consulta en el servidor';
-    return { success: false, error: msg };
+    const errorMessage = err instanceof Error ? err.message : 'Error al registrar la consulta del artículo';
+    return { success: false, error: errorMessage };
   }
 }
