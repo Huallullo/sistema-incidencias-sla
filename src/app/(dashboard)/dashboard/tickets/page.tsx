@@ -41,6 +41,7 @@ import { obtenerDisponibilidadesAction } from '@/actions/disponibilidadActions';
 import { DisponibilidadTecnico } from '@/types/disponibilidad';
 import { obtenerPrioridadesAction } from '@/actions/prioridadesActions';
 import { PrioridadServicio } from '@/types/prioridadServicio';
+import { obtenerDetalleEquipoAction } from '@/actions/equipoActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +91,7 @@ export default function TicketsPage() {
   const [updatingAssignee, setUpdatingAssignee] = useState(false);
   const [assigneeError, setAssigneeError] = useState('');
   const [assigneeSuccess, setAssigneeSuccess] = useState(false);
+  const [showFallasPrevias, setShowFallasPrevias] = useState(false);
 
   // Estados para Evaluación del Servicio
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -170,6 +172,33 @@ export default function TicketsPage() {
   const [submittingAudit, setSubmittingAudit] = useState(false);
   const [auditError, setAuditError] = useState('');
   const [auditSuccess, setAuditSuccess] = useState(false);
+
+  // Estados para Detalle del Equipo Afectado
+  const [detalleEquipo, setDetalleEquipo] = useState<any | null>(null);
+  const [loadingDetalleEquipo, setLoadingDetalleEquipo] = useState(false);
+
+  // Carga del detalle del equipo afectado cuando se selecciona un ticket
+  useEffect(() => {
+    setShowFallasPrevias(false);
+    if (!selectedTicket?.id_equipo) {
+      setDetalleEquipo(null);
+      return;
+    }
+
+    const equipoId = selectedTicket.id_equipo;
+
+    async function loadEquipoDetails() {
+      setLoadingDetalleEquipo(true);
+      const res = await obtenerDetalleEquipoAction(equipoId);
+      if (res.success && res.data) {
+        setDetalleEquipo(res.data);
+      } else {
+        setDetalleEquipo(null);
+      }
+      setLoadingDetalleEquipo(false);
+    }
+    loadEquipoDetails();
+  }, [selectedTicket]);
 
   // Carga de artículo de conocimiento cuando se selecciona un ticket
   useEffect(() => {
@@ -1008,6 +1037,103 @@ export default function TicketsPage() {
                   {selectedTicket.descripcion}
                 </p>
               </div>
+
+              {/* Ficha Técnica del Equipo Afectado e Historial de Fallas */}
+              {selectedTicket.id_equipo && (
+                <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3 shrink-0">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Dispositivo Afectado y Antecedentes
+                  </span>
+
+                  {loadingDetalleEquipo ? (
+                    <div className="flex justify-center items-center py-4">
+                      <FaSpinner className="animate-spin text-blue-600 text-sm" />
+                    </div>
+                  ) : detalleEquipo ? (
+                    <div className="space-y-3">
+                      {/* Información técnica del hardware */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs bg-white border border-slate-100 rounded-xl p-3.5 shadow-2xs">
+                        <div>
+                          <span className="block text-[9px] font-semibold text-slate-400 uppercase">Código Inventario</span>
+                          <span className="font-bold text-slate-700">{detalleEquipo.codigo}</span>
+                        </div>
+                        <div>
+                          <span className="block text-[9px] font-semibold text-slate-400 uppercase">Nombre / Tipo</span>
+                          <span className="font-bold text-slate-700 capitalize">{detalleEquipo.nombre} ({detalleEquipo.tipo})</span>
+                        </div>
+                        <div className="mt-1">
+                          <span className="block text-[9px] font-semibold text-slate-400 uppercase">Marca y Modelo</span>
+                          <span className="font-semibold text-slate-600">{detalleEquipo.marca} - {detalleEquipo.modelo}</span>
+                        </div>
+                        <div className="mt-1">
+                          <span className="block text-[9px] font-semibold text-slate-400 uppercase">Ubicación Física</span>
+                          <span className="font-semibold text-slate-600">{detalleEquipo.ubicacion}</span>
+                        </div>
+                        <div className="col-span-2 mt-1 border-t border-slate-50 pt-1.5 flex items-center justify-between">
+                          <span className="text-[9px] font-semibold text-slate-400 uppercase">Estado Operativo</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                            detalleEquipo.estado_operativo === 'operativo'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                              : detalleEquipo.estado_operativo === 'mantenimiento'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                              : 'bg-rose-50 text-rose-700 border border-rose-100'
+                          }`}>
+                            {detalleEquipo.estado_operativo}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Historial colapsable de incidencias previas */}
+                      <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => setShowFallasPrevias((prev) => !prev)}
+                          className="w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-slate-50/50 transition cursor-pointer"
+                        >
+                          <span className="text-xs font-bold text-slate-700">
+                            Ver historial de fallas ({detalleEquipo.incidencias?.filter((i: any) => i.id_incidencia !== selectedTicket.id_incidencia).length || 0} previas)
+                          </span>
+                          <span className="text-[10px] text-blue-600 font-bold">
+                            {showFallasPrevias ? 'Contraer' : 'Expandir'}
+                          </span>
+                        </button>
+
+                        {showFallasPrevias && (
+                          <div className="px-3 pb-3 pt-1 border-t border-slate-50 space-y-2 max-h-36 overflow-y-auto">
+                            {detalleEquipo.incidencias?.filter((i: any) => i.id_incidencia !== selectedTicket.id_incidencia).length === 0 ? (
+                              <p className="text-xs text-slate-400 italic py-1">Sin incidencias reportadas anteriormente.</p>
+                            ) : (
+                              detalleEquipo.incidencias
+                                ?.filter((i: any) => i.id_incidencia !== selectedTicket.id_incidencia)
+                                .map((inc: any) => (
+                                  <div key={inc.id_incidencia} className="flex justify-between items-center text-xs py-1 border-b border-slate-50 last:border-b-0">
+                                    <div className="min-w-0 pr-2">
+                                      <span className="font-semibold text-slate-700 block truncate">{inc.titulo}</span>
+                                      <span className="text-[10px] text-slate-400">Código: #{inc.codigo_ticket.substring(4)}</span>
+                                    </div>
+                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider shrink-0 ${
+                                      inc.estado === 'abierto'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                        : inc.estado === 'en_progreso'
+                                        ? 'bg-sky-50 text-sky-700 border border-sky-100'
+                                        : inc.estado === 'resuelto'
+                                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                                        : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                    }`}>
+                                      {inc.estado}
+                                    </span>
+                                  </div>
+                                ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">No se pudo cargar la ficha técnica del equipo.</p>
+                  )}
+                </div>
+              )}
 
               {/* Gestión de Estado (Técnicos y Jefes de TI) */}
               {(currentUser?.id_rol === 1 || currentUser?.id_rol === 2) && (

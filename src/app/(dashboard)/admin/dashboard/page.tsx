@@ -14,6 +14,8 @@ import { PerfilUsuario } from '@/types/auth';
 import { Incidencia } from '@/types/incidencias';
 import { obtenerTodasLasIncidenciasAction } from '@/actions/incidenciasActions';
 import NotificacionesCampana from '@/components/NotificacionesCampana';
+import { obtenerPrioridadesAction } from '@/actions/prioridadesActions';
+import { PrioridadServicio } from '@/types/prioridadServicio';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +27,7 @@ export default function AdminDashboardPage() {
   // Estados de datos reales
   const [tickets, setTickets] = useState<Incidencia[]>([]);
   const [technicians, setTechnicians] = useState<PerfilUsuario[]>([]);
+  const [prioridadesSLA, setPrioridadesSLA] = useState<PrioridadServicio[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
   useEffect(() => {
@@ -61,6 +64,12 @@ export default function AdminDashboardPage() {
         const techResult = await UsuariosService.getUsers({ rol: 'tecnico', limit: 20 });
         if (techResult.success && techResult.data) {
           setTechnicians(techResult.data);
+        }
+
+        // Fetch prioridades SLA de la BD
+        const prioResult = await obtenerPrioridadesAction();
+        if (prioResult.success && prioResult.data) {
+          setPrioridadesSLA(prioResult.data);
         }
       } catch (err) {
         console.error('Error cargando datos del dashboard:', err);
@@ -155,13 +164,81 @@ export default function AdminDashboardPage() {
     return { label: 'Ocupado', dotClass: 'bg-red-500' };
   };
 
-  // 5. Cumplimiento de SLA real (porcentaje de tickets resueltos o cerrados por prioridad)
+  // 5. Cumplimiento de SLA real (porcentaje de tickets resueltos o en curso que no han violado el tiempo de resolución)
   const calculateSlaPercentage = (pri: string) => {
-    const totalPri = tickets.filter(t => t.prioridad === pri).length;
-    if (totalPri === 0) return 100; // Si no hay tickets, cumple al 100% por defecto
-    const closedPri = tickets.filter(t => t.prioridad === pri && (t.estado === 'cerrado' || t.estado === 'resuelto')).length;
-    return Math.round((closedPri / totalPri) * 100);
+    const priTickets = tickets.filter(t => t.prioridad === pri);
+    if (priTickets.length === 0) return 100;
+
+    const config = prioridadesSLA.find(p => p.nivel === pri);
+    const fallback = {
+      critica: 120,
+      alta: 240,
+      media: 480,
+      baja: 960,
+    };
+    const tiempoResolucionMin = config ? config.tiempo_resolucion_min : (fallback[pri as keyof typeof fallback] || 960);
+
+    let cumplieronCount = 0;
+
+    priTickets.forEach(t => {
+      const fechaCreacion = new Date(t.creado_en);
+      const limite = new Date(fechaCreacion.getTime() + tiempoResolucionMin * 60000);
+
+      if (t.estado === 'resuelto' || t.estado === 'cerrado') {
+        const fechaResolucion = t.fecha_cierre
+          ? new Date(t.fecha_cierre)
+          : new Date(t.actualizado_en || t.creado_en);
+        if (fechaResolucion <= limite) {
+          cumplieronCount++;
+        }
+      } else {
+        if (new Date() <= limite) {
+          cumplieronCount++;
+        }
+      }
+    });
+
+    return Math.round((cumplieronCount / priTickets.length) * 100);
   };
+
+  // SLA Global (Porcentaje de todos los tickets que cumplen el SLA de resolución)
+  const calculateGlobalSla = () => {
+    if (tickets.length === 0) return 100;
+    
+    const fallback = {
+      critica: 120,
+      alta: 240,
+      media: 480,
+      baja: 960,
+    };
+
+    let cumplieronCount = 0;
+
+    tickets.forEach((t) => {
+      const config = prioridadesSLA.find((p) => p.nivel === t.prioridad);
+      const tiempoResolucionMin = config ? config.tiempo_resolucion_min : fallback[t.prioridad] || 960;
+      
+      const fechaCreacion = new Date(t.creado_en);
+      const limite = new Date(fechaCreacion.getTime() + tiempoResolucionMin * 60000);
+
+      if (t.estado === 'resuelto' || t.estado === 'cerrado') {
+        const fechaResolucion = t.fecha_cierre
+          ? new Date(t.fecha_cierre)
+          : new Date(t.actualizado_en || t.creado_en);
+        if (fechaResolucion <= limite) {
+          cumplieronCount++;
+        }
+      } else {
+        if (new Date() <= limite) {
+          cumplieronCount++;
+        }
+      }
+    });
+
+    return Math.round((cumplieronCount / tickets.length) * 100);
+  };
+
+  const globalSla = calculateGlobalSla();
 
   const slaPercentages = {
     critica: calculateSlaPercentage('critica'),
@@ -314,18 +391,20 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          {/* Tarjeta 4: Satisfacción */}
+          {/* Tarjeta 4: Cumplimiento SLA Global */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-xs">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Satisfacción
+                Eficacia de SLA
               </p>
-              <h3 className="text-4xl font-extrabold text-slate-400 mt-2 flex items-baseline">
-                -
+              <h3 className={`text-4xl font-extrabold mt-2 ${
+                globalSla >= 90 ? 'text-emerald-500' : globalSla >= 75 ? 'text-amber-500' : 'text-rose-500'
+              }`}>
+                {globalSla}%
               </h3>
             </div>
             <p className="text-[10px] text-slate-400 mt-4 flex items-center gap-1 font-semibold">
-              <span>Sin calificaciones registradas</span>
+              <span>Resoluciones a tiempo del mes</span>
             </p>
           </div>
 
