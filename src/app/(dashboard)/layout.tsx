@@ -400,7 +400,7 @@ export default function DashboardLayout({
                   }`}
                 >
                   <LuTicket className="text-lg shrink-0" />
-                  <span>Mis Reportes</span>
+                  <span>Tickets</span>
                 </button>
               </li>
               <li>
