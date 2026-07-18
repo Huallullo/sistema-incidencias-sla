@@ -102,7 +102,7 @@ export default function DashboardLayout({
             <ul className="space-y-1">
               <li>
                 <button
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push(currentUser?.rol === 'jefe_ti' ? '/admin/dashboard' : '/dashboard')}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname === '/dashboard' || pathname === '/admin/dashboard'
                       ? 'bg-blue-50 text-blue-600 font-bold'
