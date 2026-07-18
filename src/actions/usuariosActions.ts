@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { createClient } from '@supabase/supabase-js';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { AuthService } from '@/services/AuthService';
 
@@ -12,6 +13,7 @@ export async function actualizarUsuarioAction(
     cargo?: string;
     id_rol?: number;
     estado?: string;
+    password?: string;
   }
 ) {
   try {
@@ -27,13 +29,43 @@ export async function actualizarUsuarioAction(
       return { success: false, error: 'Acceso denegado. Solo el Jefe de TI puede editar usuarios.' };
     }
 
-    // 3. Ejecutar actualización
-    const res = await PerfilesRepository.updateProfile(userId, data);
+    // 3. Si viene contraseña, actualizar en Supabase Auth usando el cliente administrativo
+    if (data.password && data.password.trim() !== '') {
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.MY_SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      );
+
+      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        { password: data.password.trim() }
+      );
+
+      if (authError) {
+        console.error('Error updating user password via admin API:', authError);
+        return {
+          success: false,
+          error: `Error al actualizar la contraseña del usuario: ${authError.message}`,
+        };
+      }
+    }
+
+    // 4. Ejecutar actualización del perfil en base de datos
+    const profileUpdateData = { ...data };
+    delete profileUpdateData.password; // La contraseña no va en la tabla perfiles
+
+    const res = await PerfilesRepository.updateProfile(userId, profileUpdateData);
     if (!res.success) {
       return { success: false, error: res.error };
     }
 
-    // 4. Revalidar ruta para refrescar instantáneamente la tabla
+    // 5. Revalidar ruta para refrescar instantáneamente la tabla
     revalidatePath('/admin/usuarios');
 
     return { success: true, data: res.data };

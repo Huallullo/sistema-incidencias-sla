@@ -16,6 +16,7 @@ import {
   FaTags,
   FaCheckCircle,
   FaExclamationTriangle,
+  FaLock,
 } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { UsuariosService } from '@/services/UsuariosService';
@@ -43,6 +44,7 @@ export default function GestionUsuariosPage() {
   const [editRolId, setEditRolId] = useState<number>(3);
   const [editCargo, setEditCargo] = useState('');
   const [editEstado, setEditEstado] = useState('activo');
+  const [editPassword, setEditPassword] = useState('');
   const [updatingUser, setUpdatingUser] = useState(false);
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState(false);
@@ -203,6 +205,7 @@ export default function GestionUsuariosPage() {
         cargo: editCargo.trim(),
         id_rol: editRolId,
         estado: editEstado,
+        password: editPassword.trim() || undefined,
       });
 
       if (res.success) {
@@ -419,6 +422,7 @@ export default function GestionUsuariosPage() {
                             setEditRolId(user.id_rol);
                             setEditCargo(user.cargo || '');
                             setEditEstado(user.estado || 'activo');
+                            setEditPassword('');
                             setEditError('');
                             setEditSuccess(false);
                           }}
@@ -579,6 +583,25 @@ export default function GestionUsuariosPage() {
                       className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs text-slate-800 bg-white"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Fila: Restablecer Contraseña (Opcional) */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                  Restablecer Contraseña <span className="text-slate-400 font-normal normal-case">(opcional, dejar en blanco para no modificar)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                    <FaLock />
+                  </span>
+                  <input
+                    type="password"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                    placeholder="Escribe la nueva contraseña para forzar el cambio"
+                    className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs text-slate-800 bg-white"
+                  />
                 </div>
               </div>
 
