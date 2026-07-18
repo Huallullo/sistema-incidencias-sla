@@ -80,7 +80,7 @@ export class DisponibilidadService {
 
       // 3. Expandir rango de fechas
       const dates: string[] = [];
-      let current = new Date(fecha_inicio + 'T00:00:00');
+      const current = new Date(fecha_inicio + 'T00:00:00');
       const end = new Date(fecha_fin + 'T00:00:00');
       
       while (current <= end) {

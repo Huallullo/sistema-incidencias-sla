@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaBell, FaSpinner, FaPlus, FaCheckCircle, FaExclamationTriangle, FaClock } from 'react-icons/fa';
+import { FaSpinner, FaPlus, FaCheckCircle, FaExclamationTriangle, FaClock } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
