@@ -71,8 +71,8 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           {!isTecnico && (
             <button
-              onClick={() => alert('Creación de ticket en desarrollo')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold flex items-center gap-2 shadow-sm shadow-blue-100"
+              onClick={() => router.push('/dashboard/tickets')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold flex items-center gap-2 shadow-sm shadow-blue-100 cursor-pointer"
             >
               <FaPlus />
               Reportar Incidencia

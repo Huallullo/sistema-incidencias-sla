@@ -472,7 +472,7 @@ export default function AdminDashboardPage() {
                   Disponibilidad de técnicos
                 </h3>
                 <button
-                  onClick={() => alert('Gestión de Disponibilidad en desarrollo')}
+                  onClick={() => router.push('/admin/disponibilidad')}
                   className="text-xs text-blue-600 hover:underline font-bold bg-transparent border-none cursor-pointer"
                 >
                   Gestionar →
