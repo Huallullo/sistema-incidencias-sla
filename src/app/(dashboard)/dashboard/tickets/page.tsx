@@ -39,6 +39,8 @@ import {
 import { obtenerArticuloPorIncidenciaAction } from '@/actions/conocimientoActions';
 import { obtenerDisponibilidadesAction } from '@/actions/disponibilidadActions';
 import { DisponibilidadTecnico } from '@/types/disponibilidad';
+import { obtenerPrioridadesAction } from '@/actions/prioridadesActions';
+import { PrioridadServicio } from '@/types/prioridadServicio';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,6 +86,7 @@ export default function TicketsPage() {
   // Estado Asignación de Técnicos
   const [tecnicos, setTecnicos] = useState<PerfilUsuario[]>([]);
   const [disponibilidadesHoy, setDisponibilidadesHoy] = useState<DisponibilidadTecnico[]>([]);
+  const [prioridadesSLA, setPrioridadesSLA] = useState<PrioridadServicio[]>([]);
   const [updatingAssignee, setUpdatingAssignee] = useState(false);
   const [assigneeError, setAssigneeError] = useState('');
   const [assigneeSuccess, setAssigneeSuccess] = useState(false);
@@ -390,12 +393,12 @@ export default function TicketsPage() {
     loadSession();
   }, [router]);
 
-  // Carga de Técnicos y sus disponibilidades para el dropdown de asignación
+  // Carga de Técnicos, disponibilidades y prioridades SLA para el dropdown y visualizaciones
   useEffect(() => {
     if (!currentUser?.id_auth_supabase) return;
     const authId = currentUser.id_auth_supabase;
 
-    async function loadTecnicosAndAvailability() {
+    async function loadInitialData() {
       const res = await obtenerTecnicosAction();
       if (res.success && res.data) {
         setTecnicos(res.data);
@@ -410,9 +413,15 @@ export default function TicketsPage() {
       if (dispRes.success && dispRes.data) {
         setDisponibilidadesHoy(dispRes.data);
       }
+
+      // Cargar configuraciones de SLA de la BD
+      const prioRes = await obtenerPrioridadesAction();
+      if (prioRes.success && prioRes.data) {
+        setPrioridadesSLA(prioRes.data);
+      }
     }
 
-    loadTecnicosAndAvailability();
+    loadInitialData();
   }, [currentUser]);
 
   // Carga y Filtrado de Tickets
@@ -989,6 +998,9 @@ export default function TicketsPage() {
                 </div>
               </div>
 
+              {/* Monitoreo en Vivo de SLA */}
+              <SLAWidget ticket={selectedTicket} prioridades={prioridadesSLA} />
+
               {/* Bloque Descripción */}
               <div>
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Descripción detallada</span>
@@ -1389,6 +1401,156 @@ export default function TicketsPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Componente de Visualización en Vivo del Acuerdo de Nivel de Servicio (SLA)
+function SLAWidget({
+  ticket,
+  prioridades,
+}: {
+  ticket: Incidencia;
+  prioridades: PrioridadServicio[];
+}) {
+  const [now, setNow] = useState(Date.now());
+
+  // Actualizar el cronómetro cada 30 segundos
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const config = prioridades.find((p) => p.nivel === ticket.prioridad);
+  const fallback = {
+    critica: { tiempo_respuesta_min: 15, tiempo_resolucion_min: 120 },
+    alta: { tiempo_respuesta_min: 30, tiempo_resolucion_min: 240 },
+    media: { tiempo_respuesta_min: 60, tiempo_resolucion_min: 480 },
+    baja: { tiempo_respuesta_min: 120, tiempo_resolucion_min: 960 },
+  };
+  const slas = config || fallback[ticket.prioridad] || fallback.baja;
+
+  const fechaCreacion = new Date(ticket.creado_en);
+  const limiteRespuesta = new Date(fechaCreacion.getTime() + slas.tiempo_respuesta_min * 60000);
+  const limiteResolucion = new Date(fechaCreacion.getTime() + slas.tiempo_resolucion_min * 60000);
+
+  // 1. SLA de Respuesta
+  let respuestaCumplida = ticket.estado !== 'abierto';
+  let minutosRespuesta = Math.round((limiteRespuesta.getTime() - now) / 60000);
+  let respuestaExpirada = minutosRespuesta <= 0;
+
+  // 2. SLA de Resolución
+  let resolucionCumplida = ticket.estado === 'resuelto' || ticket.estado === 'cerrado';
+  let minutosResolucion = 0;
+  let resolucionExpirada = false;
+
+  if (resolucionCumplida) {
+    const fechaFin = ticket.fecha_cierre
+      ? new Date(ticket.fecha_cierre)
+      : new Date(ticket.actualizado_en || ticket.creado_en);
+    minutosResolucion = Math.round((limiteResolucion.getTime() - fechaFin.getTime()) / 60000);
+    resolucionExpirada = minutosResolucion < 0;
+  } else {
+    minutosResolucion = Math.round((limiteResolucion.getTime() - now) / 60000);
+    resolucionExpirada = minutosResolucion <= 0;
+  }
+
+  const formatMinutosLabel = (m: number) => {
+    const absMin = Math.abs(m);
+    if (absMin < 60) return `${absMin} min`;
+    const horas = Math.floor(absMin / 60);
+    const mins = absMin % 60;
+    return mins > 0 ? `${horas}h ${mins}m` : `${horas}h`;
+  };
+
+  return (
+    <div className="border border-slate-200/80 rounded-xl p-4 bg-slate-50/30 space-y-3 shrink-0">
+      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        Monitoreo de SLA (Tiempos de Servicio)
+      </span>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        {/* SLA DE RESPUESTA */}
+        <div
+          className={`border rounded-xl p-3 flex flex-col justify-between min-h-[72px] transition ${
+            respuestaCumplida
+              ? 'bg-emerald-50/50 text-emerald-800 border-emerald-100/70'
+              : respuestaExpirada
+              ? 'bg-rose-50/50 text-rose-800 border-rose-100/70'
+              : 'bg-amber-50/50 text-amber-800 border-amber-100/70'
+          }`}
+        >
+          <div className="flex items-center justify-between font-bold text-[10px] uppercase tracking-wide opacity-80 mb-1">
+            <span>SLA Respuesta</span>
+            <span>Límite: {slas.tiempo_respuesta_min} min</span>
+          </div>
+
+          <div className="flex items-center gap-2 mt-auto">
+            {respuestaCumplida ? (
+              <>
+                <FaCheckCircle className="text-emerald-500 shrink-0 text-sm" />
+                <span className="font-bold">Atendido a tiempo</span>
+              </>
+            ) : respuestaExpirada ? (
+              <>
+                <FaExclamationTriangle className="text-rose-500 shrink-0 text-sm animate-pulse" />
+                <span className="font-bold">Expirado por {formatMinutosLabel(minutosRespuesta)}</span>
+              </>
+            ) : (
+              <>
+                <FaSpinner className="text-amber-500 shrink-0 text-sm animate-spin" />
+                <span className="font-bold">Restan {formatMinutosLabel(minutosRespuesta)}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* SLA DE RESOLUCIÓN */}
+        <div
+          className={`border rounded-xl p-3 flex flex-col justify-between min-h-[72px] transition ${
+            resolucionCumplida && !resolucionExpirada
+              ? 'bg-emerald-50/50 text-emerald-800 border-emerald-100/70'
+              : resolucionExpirada
+              ? 'bg-rose-50/50 text-rose-800 border-rose-100/70'
+              : minutosResolucion < 30
+              ? 'bg-amber-50/50 text-amber-800 border-amber-100/70'
+              : 'bg-blue-50/50 text-blue-800 border-blue-100/70'
+          }`}
+        >
+          <div className="flex items-center justify-between font-bold text-[10px] uppercase tracking-wide opacity-80 mb-1">
+            <span>SLA Resolución</span>
+            <span>Límite: {formatMinutosLabel(slas.tiempo_resolucion_min)}</span>
+          </div>
+
+          <div className="flex items-center gap-2 mt-auto">
+            {resolucionCumplida ? (
+              resolucionExpirada ? (
+                <>
+                  <FaExclamationTriangle className="text-rose-500 shrink-0 text-sm" />
+                  <span className="font-bold">Excedido por {formatMinutosLabel(minutosResolucion)}</span>
+                </>
+              ) : (
+                <>
+                  <FaCheckCircle className="text-emerald-500 shrink-0 text-sm" />
+                  <span className="font-bold">Resuelto a tiempo</span>
+                </>
+              )
+            ) : resolucionExpirada ? (
+              <>
+                <FaExclamationTriangle className="text-rose-500 shrink-0 text-sm animate-pulse" />
+                <span className="font-bold">Vencido hace {formatMinutosLabel(minutosResolucion)}</span>
+              </>
+            ) : (
+              <>
+                <FaSpinner className="text-blue-500 shrink-0 text-sm animate-spin" />
+                <span className="font-bold">Restan {formatMinutosLabel(minutosResolucion)}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
