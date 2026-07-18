@@ -1,4 +1,4 @@
-import { RegistroEquipoInput, registroEquipoSchema, EquipoInformatico, ActualizarEquipoInput, actualizarEquipoSchema, HistorialEstadoEquipo } from '@/types/equipo';
+import { RegistroEquipoInput, registroEquipoSchema, EquipoInformatico, ActualizarEquipoInput, actualizarEquipoSchema, HistorialEstadoEquipo, DetalleEquipoInformatico } from '@/types/equipo';
 import { EquiposRepository } from '@/repositories/EquiposRepository';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { HistorialEstadoEquipoRepository } from '@/repositories/HistorialEstadoEquipoRepository';
@@ -107,7 +107,7 @@ export class EquiposService {
    */
   static async obtenerDetalleEquipo(
     idEquipo: string
-  ): Promise<{ success: boolean; data?: any; error?: string }> {
+  ): Promise<{ success: boolean; data?: DetalleEquipoInformatico; error?: string }> {
     try {
       if (!idEquipo) {
         return { success: false, error: 'Identificador del equipo no proporcionado.' };

@@ -81,8 +81,7 @@ function NuevaDisponibilidadModal({
   onClose: () => void;
   onSuccess: () => void;
   userId: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tecnicos: any[];
+  tecnicos: PerfilUsuario[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [mode, setMode] = useState<'single' | 'range'>('single');
@@ -685,8 +684,7 @@ export default function DisponibilidadPage() {
     if (!currentUser) return;
     setLoadingList(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const filters: any = {};
+      const filters: { fecha_inicio?: string; fecha_fin?: string } = {};
       if (filterFechaInicio) filters.fecha_inicio = filterFechaInicio;
       if (filterFechaFin) filters.fecha_fin = filterFechaFin;
 

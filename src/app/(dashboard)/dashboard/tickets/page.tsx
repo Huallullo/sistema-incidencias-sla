@@ -31,7 +31,7 @@ import {
   asignarTecnicoAction,
   cerrarTicketAuditadoAction,
 } from '@/actions/incidenciasActions';
-import { EstadoIncidencia, transicionesPermitidas } from '@/types/incidencias';
+import { EstadoIncidencia, transicionesPermitidas, HistorialEstadoTicket } from '@/types/incidencias';
 import {
   registrarEvaluacionAction,
   obtenerEvaluacionTicketAction,
@@ -42,6 +42,9 @@ import { DisponibilidadTecnico } from '@/types/disponibilidad';
 import { obtenerPrioridadesAction } from '@/actions/prioridadesActions';
 import { PrioridadServicio } from '@/types/prioridadServicio';
 import { obtenerDetalleEquipoAction } from '@/actions/equipoActions';
+import { EvaluacionServicio } from '@/types/evaluacion';
+import { ArticuloConocimiento } from '@/types/conocimiento';
+import { DetalleEquipoInformatico } from '@/types/equipo';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,8 +80,7 @@ export default function TicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState<Incidencia | null>(null);
 
   // Estado Historial del Ticket Seleccionado
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [ticketHistory, setTicketHistory] = useState<any[]>([]);
+  const [ticketHistory, setTicketHistory] = useState<HistorialEstadoTicket[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusUpdateError, setStatusUpdateError] = useState('');
@@ -94,8 +96,7 @@ export default function TicketsPage() {
   const [showFallasPrevias, setShowFallasPrevias] = useState(false);
 
   // Estados para Evaluación del Servicio
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [evaluation, setEvaluation] = useState<any | null>(null);
+  const [evaluation, setEvaluation] = useState<EvaluacionServicio | null>(null);
   const [loadingEvaluation, setLoadingEvaluation] = useState(false);
   const [evalRating, setEvalRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -164,9 +165,7 @@ export default function TicketsPage() {
     }
   };
 
-  // Estados para Auditoría y Cierre (Jefe de TI)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [kbArticle, setKbArticle] = useState<any | null>(null);
+  const [kbArticle, setKbArticle] = useState<ArticuloConocimiento | null>(null);
   const [loadingKb, setLoadingKb] = useState(false);
   const [auditComments, setAuditComments] = useState('');
   const [submittingAudit, setSubmittingAudit] = useState(false);
@@ -174,7 +173,7 @@ export default function TicketsPage() {
   const [auditSuccess, setAuditSuccess] = useState(false);
 
   // Estados para Detalle del Equipo Afectado
-  const [detalleEquipo, setDetalleEquipo] = useState<any | null>(null);
+  const [detalleEquipo, setDetalleEquipo] = useState<DetalleEquipoInformatico | null>(null);
   const [loadingDetalleEquipo, setLoadingDetalleEquipo] = useState(false);
 
   // Carga del detalle del equipo afectado cuando se selecciona un ticket
@@ -369,13 +368,13 @@ export default function TicketsPage() {
       router.refresh();
       
       // Actualizar ticket seleccionado en UI
-      const updatedTicket = {
+      const tech = tecnicoId ? tecnicos.find(t => t.id_perfil === tecnicoId) : null;
+      const updatedTicket: Incidencia = {
         ...selectedTicket,
         asignado_a: tecnicoId,
-        asignado: tecnicoId ? tecnicos.find(t => t.id_perfil === tecnicoId) || null : null
+        asignado: tech ? { nombre: tech.nombre, apellido: tech.apellido } : null
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setSelectedTicket(updatedTicket as any);
+      setSelectedTicket(updatedTicket);
 
       // Actualizar lista de tickets
       setTickets((prev) =>
@@ -462,9 +461,14 @@ export default function TicketsPage() {
       setLoadingTickets(true);
       setErrorMsg('');
 
-      // Construcción de filtros para Server Action
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const filtros: any = {
+      const filtros: {
+        busqueda?: string;
+        categoria?: string;
+        prioridad?: string;
+        fechaInicio?: string;
+        fechaFin?: string;
+        estado?: string;
+      } = {
         busqueda,
         categoria: categoria !== 'todos' ? categoria : undefined,
         prioridad: prioridad !== 'todos' ? prioridad : undefined,
@@ -1091,7 +1095,7 @@ export default function TicketsPage() {
                           className="w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-slate-50/50 transition cursor-pointer"
                         >
                           <span className="text-xs font-bold text-slate-700">
-                            Ver historial de fallas ({detalleEquipo.incidencias?.filter((i: any) => i.id_incidencia !== selectedTicket.id_incidencia).length || 0} previas)
+                            Ver historial de fallas ({detalleEquipo.incidencias?.filter((i) => i.id_incidencia !== selectedTicket?.id_incidencia).length || 0} previas)
                           </span>
                           <span className="text-[10px] text-blue-600 font-bold">
                             {showFallasPrevias ? 'Contraer' : 'Expandir'}
@@ -1100,12 +1104,12 @@ export default function TicketsPage() {
 
                         {showFallasPrevias && (
                           <div className="px-3 pb-3 pt-1 border-t border-slate-50 space-y-2 max-h-36 overflow-y-auto">
-                            {detalleEquipo.incidencias?.filter((i: any) => i.id_incidencia !== selectedTicket.id_incidencia).length === 0 ? (
+                            {detalleEquipo.incidencias?.filter((i) => i.id_incidencia !== selectedTicket?.id_incidencia).length === 0 ? (
                               <p className="text-xs text-slate-400 italic py-1">Sin incidencias reportadas anteriormente.</p>
                             ) : (
                               detalleEquipo.incidencias
-                                ?.filter((i: any) => i.id_incidencia !== selectedTicket.id_incidencia)
-                                .map((inc: any) => (
+                                ?.filter((i) => i.id_incidencia !== selectedTicket?.id_incidencia)
+                                .map((inc) => (
                                   <div key={inc.id_incidencia} className="flex justify-between items-center text-xs py-1 border-b border-slate-50 last:border-b-0">
                                     <div className="min-w-0 pr-2">
                                       <span className="font-semibold text-slate-700 block truncate">{inc.titulo}</span>

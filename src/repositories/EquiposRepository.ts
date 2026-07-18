@@ -1,5 +1,5 @@
 import { getSupabaseServerClient } from '@/lib/supabaseServer';
-import { EquipoInformatico } from '@/types/equipo';
+import { EquipoInformatico, DetalleEquipoInformatico } from '@/types/equipo';
 
 export class EquiposRepository {
   /**
@@ -151,7 +151,7 @@ export class EquiposRepository {
   /**
    * Obtiene los detalles de un equipo informático específico con su historial de incidencias
    */
-  static async getEquipmentDetails(idEquipo: string): Promise<{ success: boolean; data?: EquipoInformatico & { incidencias?: unknown[] }; error?: string }> {
+  static async getEquipmentDetails(idEquipo: string): Promise<{ success: boolean; data?: DetalleEquipoInformatico; error?: string }> {
     try {
       const client = await getSupabaseServerClient();
       const { data, error } = await client
@@ -169,8 +169,7 @@ export class EquiposRepository {
         return { success: false, error: error.message };
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return { success: true, data: data as any };
+      return { success: true, data: data as unknown as DetalleEquipoInformatico };
     } catch (err) {
       console.error('Exception in EquiposRepository.getEquipmentDetails:', err);
       return { success: false, error: 'Error inesperado al cargar el detalle del equipo' };

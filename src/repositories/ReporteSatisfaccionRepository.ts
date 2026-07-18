@@ -5,6 +5,24 @@ import {
   ReporteSatisfaccionResult,
 } from '@/types/reporteSatisfaccion';
 
+interface EvaluacionServicioRow {
+  id_evaluacion: string;
+  calificacion: number;
+  comentario: string | null;
+  creado_en: string;
+  incidencia: {
+    id_incidencia: string;
+    codigo_ticket: string;
+    titulo: string;
+    categoria: string;
+    prioridad: string;
+    creado_por: string;
+    asignado_a: string | null;
+    creador: { nombre: string; apellido: string } | null;
+    asignado: { nombre: string; apellido: string } | null;
+  } | null;
+}
+
 export class ReporteSatisfaccionRepository {
   /**
    * Obtiene las evaluaciones de servicio, filtra y calcula los indicadores de satisfacción.
@@ -63,8 +81,8 @@ export class ReporteSatisfaccionRepository {
       let sumCalificacion = 0;
       let totalSatisfechos = 0; // calificacion >= 4
 
-      for (const item of rawData ?? []) {
-        const inc = item.incidencia as any;
+      for (const item of (rawData as unknown as EvaluacionServicioRow[]) ?? []) {
+        const inc = item.incidencia;
         if (!inc) continue;
 
         // Filtro por técnico

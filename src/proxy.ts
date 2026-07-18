@@ -64,7 +64,7 @@ export async function proxy(request: NextRequest) {
     if (Array.isArray(roleData)) {
       roleName = roleData[0]?.nombre_rol || null;
     } else if (typeof roleData === 'object') {
-      roleName = (roleData as any).nombre_rol || null;
+      roleName = (roleData as { nombre_rol: string }).nombre_rol || null;
     }
   }
 

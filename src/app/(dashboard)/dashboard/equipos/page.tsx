@@ -19,7 +19,8 @@ import {
 import { obtenerEquiposAction, obtenerDetalleEquipoAction } from '@/actions/equipoActions';
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
-import { EquipoInformatico, EstadoEquipo } from '@/types/equipo';
+import { EquipoInformatico, EstadoEquipo, DetalleEquipoInformatico } from '@/types/equipo';
+import { PerfilUsuario } from '@/types/auth';
 
 // ─── Componente Modal de Detalles Completo ──────────────────────────────────
 function DetalleEquipoModal({
@@ -30,8 +31,7 @@ function DetalleEquipoModal({
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [equipo, setEquipo] = useState<any>(null);
+  const [equipo, setEquipo] = useState<DetalleEquipoInformatico | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -106,7 +106,7 @@ function DetalleEquipoModal({
               <LuShieldAlert className="shrink-0 text-red-500 text-lg" />
               <span>{error}</span>
             </div>
-          ) : (
+          ) : !equipo ? null : (
             <>
               {/* Resumen del equipo */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/60 p-5 rounded-2xl border border-slate-100">
@@ -194,8 +194,7 @@ function DetalleEquipoModal({
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {equipo.incidencias.map((ticket: any) => (
+                    {equipo?.incidencias?.map((ticket) => (
                       <div
                         key={ticket.id_incidencia}
                         className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:border-slate-200 transition"
@@ -244,8 +243,7 @@ function DetalleEquipoModal({
 // ─── Componente Principal de Consulta ───────────────────────────────────────
 export default function ConsultaEquiposPage() {
   const router = useRouter();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [currentUser, setCurrentUser] = useState<PerfilUsuario | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   const [equipos, setEquipos] = useState<EquipoInformatico[]>([]);

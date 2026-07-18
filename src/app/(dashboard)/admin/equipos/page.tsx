@@ -22,6 +22,7 @@ import { registrarEquipoAction, obtenerEquiposAction, actualizarEquipoAction, ob
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { EquipoInformatico, EstadoEquipo, registroEquipoSchema, actualizarEquipoSchema, HistorialEstadoEquipo } from '@/types/equipo';
+import { PerfilUsuario } from '@/types/auth';
 
 // ─── Toast Component ──────────────────────────────────────────────────────
 function Toast({
@@ -688,7 +689,7 @@ function EditarEquipoModal({
 // ─── Main Page Component ──────────────────────────────────────────────────
 export default function EquiposPage() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [currentUser, setCurrentUser] = useState<PerfilUsuario | null>(null);
   const [isJefeTi, setIsJefeTi] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
 

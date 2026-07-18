@@ -12,6 +12,7 @@ import { PerfilUsuario } from '@/types/auth';
 import { FiltroReporteSLA, ReporteSLAResult, TicketSLADetalle } from '@/types/reporteSLA';
 import { generarReporteSLAAction } from '@/actions/reporteSLAActions';
 import { obtenerTecnicosAction } from '@/actions/incidenciasActions';
+import type { CellHookData } from 'jspdf-autotable';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -199,8 +200,7 @@ export default function ReporteSLAPage() {
         styles: { fontSize: 7, cellPadding: 2 },
         headStyles: { fillColor: [37, 99, 235], fontSize: 7, fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [248, 250, 252] },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        didParseCell: (data: any) => {
+        didParseCell: (data: CellHookData) => {
           if (data.section === 'body' && data.column.index === 10) {
             if (data.cell.raw === 'SÍ') data.cell.styles.textColor = [16, 185, 129];
             else if (data.cell.raw === 'NO') data.cell.styles.textColor = [239, 68, 68];

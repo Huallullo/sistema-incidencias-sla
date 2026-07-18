@@ -31,9 +31,24 @@ export interface GetUsersResult {
 /**
  * Mapea un registro de la base de datos (con join de roles) a la interfaz PerfilUsuario
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapDbToPerfilUsuario(data: any): PerfilUsuario {
-  if (!data) return data;
+interface DbPerfilUsuario {
+  id_perfil: string;
+  id_auth_supabase: string;
+  id_rol: number;
+  correo: string | null;
+  nombre: string;
+  apellido: string;
+  estado: string;
+  intentos_fallidos: number;
+  fecha_bloqueo: string | null;
+  fecha_creacion: string;
+  cargo: string | null;
+  telefono_interno: string | null;
+  roles?: { nombre_rol: string } | { nombre_rol: string }[] | null;
+}
+
+function mapDbToPerfilUsuario(data: DbPerfilUsuario): PerfilUsuario {
+  if (!data) return data as unknown as PerfilUsuario;
 
   let rolString: UserRole = 'usuario';
   const roleData = data.roles;
@@ -42,7 +57,7 @@ function mapDbToPerfilUsuario(data: any): PerfilUsuario {
     if (Array.isArray(roleData)) {
       dbRoleName = roleData[0]?.nombre_rol || null;
     } else if (typeof roleData === 'object') {
-      dbRoleName = (roleData as any).nombre_rol || null;
+      dbRoleName = (roleData as { nombre_rol: string }).nombre_rol || null;
     }
   }
 

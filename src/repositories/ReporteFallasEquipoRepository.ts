@@ -6,6 +6,28 @@ import {
   ReporteFallasResult,
 } from '@/types/reporteFallasEquipo';
 
+interface FallasIncidenciaRow {
+  id_incidencia: string;
+  codigo_ticket: string;
+  titulo: string;
+  categoria: string;
+  prioridad: string;
+  estado: string;
+  creado_en: string;
+  fecha_cierre: string | null;
+  asignado_a: string | null;
+  id_equipo: string | null;
+  asignado: { nombre: string; apellido: string } | null;
+  equipo: {
+    id_equipo: string;
+    codigo: string;
+    nombre: string;
+    tipo: string;
+    ubicacion: string;
+    estado_operativo: string;
+  } | null;
+}
+
 export class ReporteFallasEquipoRepository {
   /**
    * Consulta el historial de incidencias por equipo informático,
@@ -62,20 +84,20 @@ export class ReporteFallasEquipoRepository {
       // 2. Agrupar por equipo en memoria con filtros adicionales de tipo y ubicación
       const mapa = new Map<string, EquipoFallaResumen>();
 
-      for (const inc of incidencias ?? []) {
-        const eq = inc.equipo as any;
+      for (const inc of (incidencias as unknown as FallasIncidenciaRow[]) ?? []) {
+        const eq = inc.equipo;
         if (!eq) continue;
 
         // Filtro por tipo de equipo (post-query porque es campo del equipo)
         if (filtros.tipoEquipo && filtros.tipoEquipo !== 'todos') {
-          if ((eq.tipo as string).toLowerCase() !== filtros.tipoEquipo.toLowerCase()) continue;
+          if (eq.tipo.toLowerCase() !== filtros.tipoEquipo.toLowerCase()) continue;
         }
         // Filtro por ubicación (contiene)
         if (filtros.ubicacion && filtros.ubicacion.trim() !== '') {
-          if (!(eq.ubicacion as string).toLowerCase().includes(filtros.ubicacion.toLowerCase())) continue;
+          if (!eq.ubicacion.toLowerCase().includes(filtros.ubicacion.toLowerCase())) continue;
         }
 
-        const key = eq.id_equipo as string;
+        const key = eq.id_equipo;
         if (!mapa.has(key)) {
           mapa.set(key, {
             id_equipo:           key,
@@ -83,7 +105,7 @@ export class ReporteFallasEquipoRepository {
             nombre:              eq.nombre,
             tipo:                eq.tipo,
             ubicacion:           eq.ubicacion,
-            estado_operativo:    eq.estado_operativo,
+            estado_operativo:    eq.estado_operativo as "operativo" | "mantenimiento" | "inoperativo",
             total_fallas:        0,
             fallas_abiertas:     0,
             fallas_en_progreso:  0,
@@ -96,7 +118,7 @@ export class ReporteFallasEquipoRepository {
         }
 
         const entry  = mapa.get(key)!;
-        const tec    = inc.asignado as any;
+        const tec    = inc.asignado;
         const tecNom = tec ? `${tec.nombre} ${tec.apellido}`.trim() : 'Sin asignar';
 
         // Calcular tiempo de resolución en horas

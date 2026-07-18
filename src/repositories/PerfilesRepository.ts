@@ -5,9 +5,24 @@ import { UserRole, PerfilUsuario } from '@/types/auth';
 /**
  * Mapea un registro de la base de datos (con join de roles) a la interfaz PerfilUsuario
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapDbToPerfilUsuario(data: any): PerfilUsuario {
-  if (!data) return data;
+interface DbPerfilUsuario {
+  id_perfil: string;
+  id_auth_supabase: string;
+  id_rol: number;
+  correo: string | null;
+  nombre: string;
+  apellido: string;
+  estado: string;
+  intentos_fallidos: number;
+  fecha_bloqueo: string | null;
+  fecha_creacion: string;
+  cargo: string | null;
+  telefono_interno: string | null;
+  roles?: { nombre_rol: string } | { nombre_rol: string }[] | null;
+}
+
+function mapDbToPerfilUsuario(data: DbPerfilUsuario): PerfilUsuario {
+  if (!data) return data as unknown as PerfilUsuario;
 
   // Determinar rol como UserRole string
   let rolString: UserRole = 'usuario';
@@ -18,7 +33,7 @@ function mapDbToPerfilUsuario(data: any): PerfilUsuario {
     if (Array.isArray(roleData)) {
       dbRoleName = roleData[0]?.nombre_rol || null;
     } else if (typeof roleData === 'object') {
-      dbRoleName = (roleData as any).nombre_rol || null;
+      dbRoleName = (roleData as { nombre_rol: string }).nombre_rol || null;
     }
   }
 
@@ -83,7 +98,7 @@ export class PerfilesRepository {
         if (Array.isArray(roleData)) {
           roleName = roleData[0]?.nombre_rol || null;
         } else if (typeof roleData === 'object') {
-          roleName = (roleData as any).nombre_rol || null;
+          roleName = (roleData as { nombre_rol: string }).nombre_rol || null;
         }
       }
 
@@ -181,8 +196,7 @@ export class PerfilesRepository {
     }
   ): Promise<{ success: boolean; data?: PerfilUsuario; error?: string }> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const updateData: any = {};
+      const updateData: Record<string, string | number | null> = {};
       if (profileData.telefono_interno !== undefined) updateData.telefono_interno = profileData.telefono_interno;
       if (profileData.cargo !== undefined) updateData.cargo = profileData.cargo;
       if (profileData.correo !== undefined) updateData.correo = profileData.correo;

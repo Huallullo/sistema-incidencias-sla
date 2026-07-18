@@ -5,6 +5,15 @@ import {
   ReporteConocimientoResult,
 } from '@/types/reporteConocimiento';
 
+interface ConocimientoArticuloRow {
+  id_articulo: string;
+  titulo: string;
+  categoria: string;
+  creado_en: string;
+  autor_id: string;
+  autor: { nombre: string; apellido: string } | null;
+}
+
 export class ReporteConocimientoRepository {
   /**
    * Obtiene la cantidad de consultas por artículo, ordena de mayor a menor y calcula los KPIs.
@@ -61,7 +70,7 @@ export class ReporteConocimientoRepository {
       let maxVistasArticulo = -1;
       let tituloMaxVistas = '—';
 
-      for (const art of articulos ?? []) {
+      for (const art of (articulos as unknown as ConocimientoArticuloRow[]) ?? []) {
         // Filtro por categoría del artículo
         if (filtros.categoria && filtros.categoria !== 'todas') {
           if (art.categoria !== filtros.categoria) continue;
@@ -73,7 +82,7 @@ export class ReporteConocimientoRepository {
         }
 
         const vistas = vistasMap.get(art.id_articulo) || 0;
-        const aut = (Array.isArray(art.autor) ? art.autor[0] : art.autor) as any;
+        const aut = art.autor;
         const autorNom = aut
           ? `${aut.nombre} ${aut.apellido}`.trim()
           : 'Soporte TI';

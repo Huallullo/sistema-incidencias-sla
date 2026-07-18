@@ -122,3 +122,14 @@ export const actualizarEquipoSchema = z.object({
 
 export type ActualizarEquipoInput = z.infer<typeof actualizarEquipoSchema>;
 
+export interface DetalleEquipoInformatico extends EquipoInformatico {
+  incidencias?: {
+    id_incidencia: string;
+    codigo_ticket: string;
+    titulo: string;
+    estado: string;
+    fecha_creacion: string;
+  }[];
+}
+
+

@@ -1,6 +1,6 @@
 'use server';
 
-import { RegistroEquipoInput, EquipoInformatico, ActualizarEquipoInput, HistorialEstadoEquipo } from '@/types/equipo';
+import { RegistroEquipoInput, EquipoInformatico, ActualizarEquipoInput, HistorialEstadoEquipo, DetalleEquipoInformatico } from '@/types/equipo';
 import { EquiposService } from '@/services/EquiposService';
 
 import { revalidatePath } from 'next/cache';
@@ -52,7 +52,7 @@ export async function obtenerEquiposAction(filters?: {
  */
 export async function obtenerDetalleEquipoAction(
   idEquipo: string
-): Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }> {
+): Promise<{ success: boolean; data?: DetalleEquipoInformatico; error?: string }> {
   try {
     return await EquiposService.obtenerDetalleEquipo(idEquipo);
   } catch (err) {

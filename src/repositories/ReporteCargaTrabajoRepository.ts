@@ -5,6 +5,15 @@ import {
   ReporteCargaResult,
 } from '@/types/reporteCargaTrabajo';
 
+interface CargaIncidenciaRow {
+  id_incidencia: string;
+  prioridad: string;
+  estado: string;
+  asignado_a: string | null;
+  creado_en: string;
+  asignado: { id_perfil: string; nombre: string; apellido: string } | null;
+}
+
 export class ReporteCargaTrabajoRepository {
   /**
    * Consulta las incidencias agrupadas por técnico para el reporte de carga de trabajo.
@@ -55,11 +64,11 @@ export class ReporteCargaTrabajoRepository {
       // 2. Agrupar en memoria por técnico
       const mapa = new Map<string, DesgloseCargaTecnico>();
 
-      for (const inc of incidencias ?? []) {
-        const tecnico = inc.asignado as any;
+      for (const inc of (incidencias as unknown as CargaIncidenciaRow[]) ?? []) {
+        const tecnico = inc.asignado;
         if (!tecnico) continue;
 
-        const key = tecnico.id_perfil as string;
+        const key = tecnico.id_perfil;
         if (!mapa.has(key)) {
           mapa.set(key, {
             id_perfil: key,

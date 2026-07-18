@@ -7,6 +7,7 @@ import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
 import { Incidencia } from '@/types/incidencias';
+import { PrioridadServicio } from '@/types/prioridadServicio';
 import NotificacionesCampana from '@/components/NotificacionesCampana';
 import { consultarIncidenciasAction } from '@/actions/incidenciasActions';
 import { obtenerPrioridadesAction } from '@/actions/prioridadesActions';
@@ -53,7 +54,7 @@ export default function DashboardPage() {
         ]);
 
         let listTickets: Incidencia[] = [];
-        let listPrioridades: any[] = [];
+        let listPrioridades: PrioridadServicio[] = [];
 
         if (ticketsRes.success && ticketsRes.data) {
           listTickets = ticketsRes.data;

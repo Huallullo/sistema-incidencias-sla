@@ -1,6 +1,21 @@
 import { getSupabaseServerClient } from '@/lib/supabaseServer';
 import { FiltroReporteSLA, TicketSLADetalle, ResumenSLA, ReporteSLAResult } from '@/types/reporteSLA';
 
+interface IncidenciaSLARow {
+  id_incidencia: string;
+  codigo_ticket: string;
+  titulo: string;
+  prioridad: string;
+  estado: string;
+  creado_por: string;
+  asignado_a: string | null;
+  creado_en: string;
+  actualizado_en: string;
+  fecha_cierre: string | null;
+  creador: { nombre: string; apellido: string } | null;
+  asignado: { nombre: string; apellido: string } | null;
+}
+
 export class ReporteSLARepository {
   /**
    * Consulta las incidencias con sus datos de prioridad_servicio para el cálculo de SLA.
@@ -80,8 +95,7 @@ export class ReporteSLARepository {
       }
 
       // 3. Calcular métricas SLA por cada ticket
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tickets: TicketSLADetalle[] = (incidencias ?? []).map((inc: any) => {
+      const tickets: TicketSLADetalle[] = (incidencias as unknown as IncidenciaSLARow[] ?? []).map((inc: IncidenciaSLARow) => {
         const createdAt = new Date(inc.creado_en);
         const updatedAt = new Date(inc.actualizado_en);
         const closedAt = inc.fecha_cierre ? new Date(inc.fecha_cierre) : null;
