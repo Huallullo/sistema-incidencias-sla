@@ -12,33 +12,39 @@ export class EvaluacionService {
     input: RegistroEvaluacionInput
   ): Promise<{ success: boolean; data?: EvaluacionServicio; error?: string }> {
     try {
-      // 1. Obtener la incidencia
+      // 1. Resolver el userId de autenticación al id_perfil interno del sistema
+      const profile = await PerfilesRepository.getProfileByUserId(userId);
+      if (!profile) {
+        return { success: false, error: 'No se encontró un perfil asociado a su cuenta.' };
+      }
+
+      // 2. Obtener la incidencia
       const ticketRes = await IncidenciasRepository.getById(input.id_incidencia);
       if (!ticketRes.success || !ticketRes.data) {
         return { success: false, error: 'La incidencia especificada no existe.' };
       }
       const ticket = ticketRes.data;
 
-      // 2. Validar que el usuario sea el creador del ticket (propietario)
-      if (ticket.creado_por !== userId) {
+      // 3. Validar que el usuario sea el creador del ticket (comparación con id_perfil, no id_auth)
+      if (ticket.creado_por !== profile.id_perfil) {
         return { success: false, error: 'Acceso denegado. Solo el usuario propietario del ticket puede evaluarlo.' };
       }
 
-      // 3. Validar que el ticket esté en estado Cerrado
+      // 4. Validar que el ticket esté en estado Cerrado
       if (ticket.estado !== 'cerrado') {
         return { success: false, error: 'La incidencia debe estar en estado "cerrado" para poder ser evaluada.' };
       }
 
-      // 4. Validar que no exista una evaluación previa para este ticket
+      // 5. Validar que no exista una evaluación previa para este ticket
       const existing = await EvaluacionRepository.findByIncidenciaId(input.id_incidencia);
       if (existing) {
         return { success: false, error: 'Ya existe una evaluación registrada para esta incidencia.' };
       }
 
-      // 5. Proceder al registro
+      // 6. Proceder al registro usando el id_perfil (no el id_auth_supabase)
       return await EvaluacionRepository.insert({
         id_incidencia: input.id_incidencia,
-        creado_por: userId,
+        creado_por: profile.id_perfil,
         calificacion: input.calificacion,
         comentario: input.comentario || null,
       });

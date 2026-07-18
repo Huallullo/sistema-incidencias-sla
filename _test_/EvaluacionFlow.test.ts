@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { IncidenciasRepository } from '@/repositories/IncidenciasRepository';
 import { EvaluacionRepository } from '@/repositories/EvaluacionRepository';
 import { EvaluacionService } from '@/services/EvaluacionService';
+import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 
 // Mock Supabase Client
 jest.mock('@/lib/supabaseClient', () => {
@@ -23,6 +24,15 @@ jest.mock('@/lib/supabaseClient', () => {
     },
   };
 });
+
+// Mock PerfilesRepository
+jest.mock('@/repositories/PerfilesRepository', () => ({
+  PerfilesRepository: {
+    getProfileByUserId: jest.fn(),
+    getProfileById: jest.fn(),
+    getRoleByUserId: jest.fn(),
+  },
+}));
 
 describe('HU-017: Pruebas del Módulo de Evaluación del Servicio', () => {
   const mockFrom = (supabase.from as jest.Mock)();
@@ -45,7 +55,14 @@ describe('HU-017: Pruebas del Módulo de Evaluación del Servicio', () => {
 
   describe('registrarEvaluacionAction', () => {
     it('debe registrar la evaluación con éxito si cumple con todas las condiciones', async () => {
-      // 1. Mock de obtener incidencia
+      // 0. Mock de resolver el perfil del usuario autenticado
+      (PerfilesRepository.getProfileByUserId as jest.Mock).mockResolvedValueOnce({
+        id_perfil: mockUserUuid,
+        id_rol: 3,
+        rol: 'usuario',
+      });
+
+      // 1. Mock de obtener incidencia (creado_por === id_perfil del usuario)
       jest.spyOn(IncidenciasRepository, 'getById').mockResolvedValueOnce({
         success: true,
         data: {
@@ -93,12 +110,19 @@ describe('HU-017: Pruebas del Módulo de Evaluación del Servicio', () => {
     });
 
     it('debe fallar si el usuario no es el propietario de la incidencia', async () => {
-      // Mock de obtener incidencia (creado por otro usuario)
+      // Mock del perfil del usuario autenticado (su id_perfil)
+      (PerfilesRepository.getProfileByUserId as jest.Mock).mockResolvedValueOnce({
+        id_perfil: mockUserUuid,
+        id_rol: 3,
+        rol: 'usuario',
+      });
+
+      // Mock de obtener incidencia (creado por OTRO usuario con diferente id_perfil)
       jest.spyOn(IncidenciasRepository, 'getById').mockResolvedValueOnce({
         success: true,
         data: {
           id_incidencia: mockTicketUuid,
-          creado_por: 'otro-usuario-uuid',
+          creado_por: 'otro-perfil-id-distinto',
           estado: 'cerrado',
           titulo: 'Problema de red',
           descripcion: 'Falla',
@@ -123,7 +147,14 @@ describe('HU-017: Pruebas del Módulo de Evaluación del Servicio', () => {
     });
 
     it('debe fallar si la incidencia no está en estado cerrado', async () => {
-      // Mock de obtener incidencia en estado 'en_progreso'
+      // Mock del perfil del usuario autenticado
+      (PerfilesRepository.getProfileByUserId as jest.Mock).mockResolvedValueOnce({
+        id_perfil: mockUserUuid,
+        id_rol: 3,
+        rol: 'usuario',
+      });
+
+      // Mock de obtener incidencia en estado 'en_progreso' (mismo propietario)
       jest.spyOn(IncidenciasRepository, 'getById').mockResolvedValueOnce({
         success: true,
         data: {
@@ -153,7 +184,14 @@ describe('HU-017: Pruebas del Módulo de Evaluación del Servicio', () => {
     });
 
     it('debe fallar si ya existe una evaluación previa para la incidencia', async () => {
-      // Mock de obtener incidencia cerrada
+      // Mock del perfil del usuario autenticado
+      (PerfilesRepository.getProfileByUserId as jest.Mock).mockResolvedValueOnce({
+        id_perfil: mockUserUuid,
+        id_rol: 3,
+        rol: 'usuario',
+      });
+
+      // Mock de obtener incidencia cerrada (mismo propietario)
       jest.spyOn(IncidenciasRepository, 'getById').mockResolvedValueOnce({
         success: true,
         data: {
@@ -172,7 +210,7 @@ describe('HU-017: Pruebas del Módulo de Evaluación del Servicio', () => {
         },
       });
 
-      // Mock de buscar evaluación previa (ya existe una evaluación)
+      // Mock de buscar evaluación previa (ya existe)
       jest.spyOn(EvaluacionRepository, 'findByIncidenciaId').mockResolvedValueOnce({
         id_evaluacion: 'eval-existente',
         id_incidencia: mockTicketUuid,

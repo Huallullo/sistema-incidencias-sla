@@ -66,7 +66,9 @@ export class AuthService {
         }
 
         if (failedResult?.blocked) {
-          const remainingSec = 900; // 15 minutos por defecto en segundos
+          // Calcular el tiempo real restante de bloqueo desde la fecha_bloqueo devuelta por el RPC
+          const lockUntil = failedResult.blocked_until ? new Date(failedResult.blocked_until).getTime() : null;
+          const remainingSec = lockUntil ? Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000)) : 900;
           return {
             user: null,
             session: null,

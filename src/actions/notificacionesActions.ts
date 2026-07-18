@@ -1,6 +1,6 @@
 'use server';
 
-import { IncidenciasRepository } from '@/repositories/IncidenciasRepository';
+import { getSupabaseServerClient } from '@/lib/supabaseServer';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 
 export interface AlertaNotificacion {
@@ -31,19 +31,20 @@ export async function obtenerAlertasNotificacionesAction(
 
     const alertas: AlertaNotificacion[] = [];
 
-    // 1. Obtener todas las incidencias para procesar según el rol
-    const ticketsRes = await IncidenciasRepository.getAll();
-    if (!ticketsRes.success || !ticketsRes.data) {
-      return { success: true, data: [] };
-    }
-
-    const tickets = ticketsRes.data;
-
     if (profile.rol === 'jefe_ti') {
-      // Alertas para el Jefe de TI
-      // A. Tickets abiertos sin asignar
-      const sinAsignar = tickets.filter(t => t.estado === 'abierto' && !t.asignado_a);
-      sinAsignar.slice(0, 3).forEach(t => {
+      // Para el Jefe de TI: consultar SOLO tickets sin asignar y los resueltos pendientes de cierre
+      const client = await getSupabaseServerClient();
+
+      // A. Tickets abiertos sin asignar (máx. 3 alertas)
+      const { data: sinAsignar } = await client
+        .from('incidencias')
+        .select('id_incidencia, codigo_ticket, titulo')
+        .eq('estado', 'abierto')
+        .is('asignado_a', null)
+        .order('creado_en', { ascending: true })
+        .limit(3);
+
+      (sinAsignar || []).forEach(t => {
         alertas.push({
           id: `tck-asignar-${t.id_incidencia}`,
           titulo: 'Asignación Pendiente',
@@ -55,9 +56,15 @@ export async function obtenerAlertasNotificacionesAction(
         });
       });
 
-      // B. Tickets resueltos que requieren cierre/auditoría
-      const resueltos = tickets.filter(t => t.estado === 'resuelto');
-      resueltos.slice(0, 3).forEach(t => {
+      // B. Tickets resueltos pendientes de auditoría/cierre (máx. 3 alertas)
+      const { data: resueltos } = await client
+        .from('incidencias')
+        .select('id_incidencia, codigo_ticket, titulo')
+        .eq('estado', 'resuelto')
+        .order('actualizado_en', { ascending: true })
+        .limit(3);
+
+      (resueltos || []).forEach(t => {
         alertas.push({
           id: `tck-auditar-${t.id_incidencia}`,
           titulo: 'Auditoría de Cierre',
@@ -70,10 +77,17 @@ export async function obtenerAlertasNotificacionesAction(
       });
 
     } else if (profile.rol === 'tecnico') {
-      // Alertas para el Técnico
-      // Tickets asignados a él en progreso o abiertos
-      const asignados = tickets.filter(t => t.asignado_a === profile.id_perfil && (t.estado === 'abierto' || t.estado === 'en_progreso'));
-      asignados.slice(0, 5).forEach(t => {
+      // Para el Técnico: solo sus tickets asignados que están abiertos o en progreso
+      const client = await getSupabaseServerClient();
+      const { data: asignados } = await client
+        .from('incidencias')
+        .select('id_incidencia, codigo_ticket, titulo, estado, prioridad')
+        .eq('asignado_a', profile.id_perfil)
+        .in('estado', ['abierto', 'en_progreso'])
+        .order('creado_en', { ascending: true })
+        .limit(5);
+
+      (asignados || []).forEach(t => {
         alertas.push({
           id: `tck-tecnico-${t.id_incidencia}`,
           titulo: t.estado === 'abierto' ? 'Nueva Asignación' : 'Trabajo en Progreso',
@@ -86,10 +100,17 @@ export async function obtenerAlertasNotificacionesAction(
       });
 
     } else {
-      // Alertas para el Usuario Final
-      // Tickets creados por él que han cambiado de estado
-      const deUsuario = tickets.filter(t => t.creado_por === profile.id_perfil);
-      deUsuario.slice(0, 5).forEach(t => {
+      // Para el Usuario Final: solo sus propios tickets con estados relevantes
+      const client = await getSupabaseServerClient();
+      const { data: deUsuario } = await client
+        .from('incidencias')
+        .select('id_incidencia, codigo_ticket, titulo, estado')
+        .eq('creado_por', profile.id_perfil)
+        .in('estado', ['en_progreso', 'resuelto', 'cerrado'])
+        .order('actualizado_en', { ascending: false })
+        .limit(5);
+
+      (deUsuario || []).forEach(t => {
         if (t.estado === 'en_progreso') {
           alertas.push({
             id: `tck-user-prog-${t.id_incidencia}`,
