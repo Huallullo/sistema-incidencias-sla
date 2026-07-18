@@ -15,6 +15,7 @@ import { AuthService } from '@/services/AuthService';
 import { UsuariosService } from '@/services/UsuariosService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
+import NotificacionesCampana from '@/components/NotificacionesCampana';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,7 @@ export default function GestionUsuariosPage() {
   const router = useRouter();
 
   // Estados de carga e interfaz
+  const [currentUser, setCurrentUser] = useState<PerfilUsuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<PerfilUsuario[]>([]);
   const [count, setCount] = useState(0);
@@ -67,6 +69,8 @@ export default function GestionUsuariosPage() {
           router.push('/dashboard');
           return;
         }
+
+        setCurrentUser(profile as PerfilUsuario);
       } catch (err) {
         console.error('Error cargando sesión:', err);
         router.push('/login');
@@ -204,10 +208,9 @@ export default function GestionUsuariosPage() {
           </button>
 
           {/* Botón Notificaciones */}
-          <button className="w-10 h-10 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 relative transition">
-            <FaBell />
-            <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-red-500"></span>
-          </button>
+          {currentUser && (
+            <NotificacionesCampana authUserId={currentUser.id_auth_supabase ?? ''} />
+          )}
         </div>
       </header>
 

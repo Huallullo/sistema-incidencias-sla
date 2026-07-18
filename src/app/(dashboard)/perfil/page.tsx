@@ -11,6 +11,7 @@ import { AuthService } from '@/services/AuthService';
 import { UsuariosService } from '@/services/UsuariosService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
+import NotificacionesCampana from '@/components/NotificacionesCampana';
 
 export const dynamic = 'force-dynamic';
 
@@ -226,10 +227,9 @@ export default function PerfilPage() {
           </div>
 
           {/* Botón Notificaciones */}
-          <button className="w-9 h-9 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 relative transition">
-            <FaBell size={14} />
-            <span className="absolute top-2 right-2.5 w-1.5 h-1.5 rounded-full bg-red-500"></span>
-          </button>
+          {currentUser && (
+            <NotificacionesCampana authUserId={currentUser.id_auth_supabase ?? ''} />
+          )}
         </div>
       </header>
 

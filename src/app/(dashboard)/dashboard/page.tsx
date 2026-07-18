@@ -6,6 +6,7 @@ import { FaBell, FaSpinner, FaPlus, FaCheckCircle, FaExclamationTriangle, FaCloc
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
+import NotificacionesCampana from '@/components/NotificacionesCampana';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,10 +78,7 @@ export default function DashboardPage() {
               Reportar Incidencia
             </button>
           )}
-          <button className="w-10 h-10 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 relative transition">
-            <FaBell />
-            <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-blue-500"></span>
-          </button>
+          <NotificacionesCampana authUserId={currentUser?.id_auth_supabase ?? ''} />
         </div>
       </header>
 
