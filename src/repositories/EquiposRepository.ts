@@ -162,6 +162,8 @@ export class EquiposRepository {
           incidencias:incidencias(id_incidencia, codigo_ticket, titulo, estado, fecha_creacion)
         `)
         .eq('id_equipo', idEquipo)
+        .order('fecha_creacion', { foreignTable: 'incidencias', ascending: false })
+        .limit(10, { foreignTable: 'incidencias' })
         .maybeSingle();
 
       if (error) {

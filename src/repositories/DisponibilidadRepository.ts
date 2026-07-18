@@ -42,6 +42,44 @@ export class DisponibilidadRepository {
   }
 
   /**
+   * Registra múltiples disponibilidades en una sola operación atómica (bulk insert)
+   */
+  static async insertMany(rows: {
+    id_tecnico: string;
+    fecha: string;
+    hora_inicio: string;
+    hora_fin: string;
+    turno: string;
+    estado: string;
+  }[]): Promise<{ success: boolean; count?: number; error?: string }> {
+    try {
+      const client = await getSupabaseServerClient();
+      const { data: inserted, error } = await client
+        .from('disponibilidad_tecnico')
+        .insert(rows.map(row => ({
+          id_tecnico: row.id_tecnico,
+          fecha: row.fecha,
+          hora_inicio: row.hora_inicio,
+          hora_fin: row.hora_fin,
+          turno: row.turno,
+          estado: row.estado,
+        })))
+        .select('id_disponibilidad');
+
+      if (error) {
+        console.error('Error in DisponibilidadRepository.insertMany:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, count: inserted?.length || 0 };
+    } catch (err) {
+      console.error('Exception in DisponibilidadRepository.insertMany:', err);
+      const msg = err instanceof Error ? err.message : 'Error inesperado al persistir lote de disponibilidades';
+      return { success: false, error: msg };
+    }
+  }
+
+  /**
    * Actualiza un registro de disponibilidad
    */
   static async update(

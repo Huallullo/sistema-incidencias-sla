@@ -14,6 +14,7 @@ jest.mock('@/lib/supabaseClient', () => {
     order: jest.fn().mockReturnThis(),
     single: jest.fn(),
     maybeSingle: jest.fn(),
+    limit: jest.fn().mockReturnThis(),
     insert: jest.fn().mockReturnThis(),
     then: jest.fn((resolve) => resolve({ data: null, error: null })),
   };

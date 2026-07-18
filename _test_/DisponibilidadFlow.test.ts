@@ -154,9 +154,9 @@ describe('HU-015: Pruebas del Módulo de Disponibilidad de Técnicos', () => {
     it('debe registrar múltiples disponibilidades exitosamente para un rango sin conflictos', async () => {
       mockGetRole.mockResolvedValueOnce('jefe_ti');
       jest.spyOn(DisponibilidadRepository, 'checkOverlap').mockResolvedValue(false);
-      jest.spyOn(DisponibilidadRepository, 'insert').mockResolvedValue({
+      jest.spyOn(DisponibilidadRepository, 'insertMany').mockResolvedValue({
         success: true,
-        data: {} as any
+        count: 3
       });
 
       // Rango de 3 días: 2026-07-12, 13, 14

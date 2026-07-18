@@ -1095,7 +1095,7 @@ export default function TicketsPage() {
                           className="w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-slate-50/50 transition cursor-pointer"
                         >
                           <span className="text-xs font-bold text-slate-700">
-                            Ver historial de fallas ({detalleEquipo.incidencias?.filter((i) => i.id_incidencia !== selectedTicket?.id_incidencia).length || 0} previas)
+                            Ver historial de fallas (hasta 10 incidencias previas)
                           </span>
                           <span className="text-[10px] text-blue-600 font-bold">
                             {showFallasPrevias ? 'Contraer' : 'Expandir'}

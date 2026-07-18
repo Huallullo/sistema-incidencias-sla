@@ -99,23 +99,22 @@ export class DisponibilidadService {
         }
       }
 
-      // 5. Insertar registros
-      let insertCount = 0;
-      for (const d of dates) {
-        const res = await DisponibilidadRepository.insert({
-          id_tecnico,
-          fecha: d,
-          hora_inicio,
-          hora_fin,
-          turno,
-          estado
-        });
-        if (res.success) {
-          insertCount++;
-        }
+      // 5. Insertar registros de forma atómica en lote (bulk insert)
+      const rowsToInsert = dates.map(d => ({
+        id_tecnico,
+        fecha: d,
+        hora_inicio,
+        hora_fin,
+        turno,
+        estado
+      }));
+
+      const res = await DisponibilidadRepository.insertMany(rowsToInsert);
+      if (!res.success) {
+        return { success: false, error: res.error || 'Error al persistir el lote de disponibilidad.' };
       }
 
-      return { success: true, count: insertCount };
+      return { success: true, count: res.count };
     } catch (err) {
       console.error('Exception in DisponibilidadService.registrarRangoDisponibilidad:', err);
       const msg = err instanceof Error ? err.message : 'Error inesperado al registrar rango de disponibilidad';
