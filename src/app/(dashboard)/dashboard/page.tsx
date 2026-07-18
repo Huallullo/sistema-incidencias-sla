@@ -6,7 +6,10 @@ import { FaBell, FaSpinner, FaPlus, FaCheckCircle, FaExclamationTriangle, FaCloc
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
+import { Incidencia } from '@/types/incidencias';
 import NotificacionesCampana from '@/components/NotificacionesCampana';
+import { consultarIncidenciasAction } from '@/actions/incidenciasActions';
+import { obtenerPrioridadesAction } from '@/actions/prioridadesActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +17,11 @@ export default function DashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<PerfilUsuario | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Estados para métricas reales
+  const [ticketsActivos, setTicketsActivos] = useState(0);
+  const [ticketsResueltos, setTicketsResueltos] = useState(0);
+  const [ticketsFueraSLA, setTicketsFueraSLA] = useState(0);
 
   useEffect(() => {
     async function loadSession() {
@@ -37,6 +45,69 @@ export default function DashboardPage() {
         }
 
         setCurrentUser(profile as PerfilUsuario);
+
+        // Cargar incidencias del usuario y prioridades para calcular métricas reales
+        const [ticketsRes, prioRes] = await Promise.all([
+          consultarIncidenciasAction(profile.id_auth_supabase, {}),
+          obtenerPrioridadesAction(),
+        ]);
+
+        let listTickets: Incidencia[] = [];
+        let listPrioridades: any[] = [];
+
+        if (ticketsRes.success && ticketsRes.data) {
+          listTickets = ticketsRes.data;
+        }
+        if (prioRes.success && prioRes.data) {
+          listPrioridades = prioRes.data;
+        }
+
+        // 1. Tickets Activos (abierto, en_progreso)
+        const activos = listTickets.filter(
+          (t) => t.estado === 'abierto' || t.estado === 'en_progreso'
+        ).length;
+
+        // 2. Resueltos (resuelto, cerrado)
+        const resueltos = listTickets.filter(
+          (t) => t.estado === 'resuelto' || t.estado === 'cerrado'
+        ).length;
+
+        // 3. Fuera de SLA
+        let fueraSLA = 0;
+        const fallback = {
+          critica: 120,
+          alta: 240,
+          media: 480,
+          baja: 960,
+        };
+
+        listTickets.forEach((t) => {
+          const config = listPrioridades.find((p) => p.nivel === t.prioridad);
+          const tiempoResolucionMin = config
+            ? config.tiempo_resolucion_min
+            : (fallback[t.prioridad as keyof typeof fallback] || 960);
+
+          const fechaCreacion = new Date(t.creado_en);
+          const limite = new Date(fechaCreacion.getTime() + tiempoResolucionMin * 60000);
+
+          if (t.estado === 'resuelto' || t.estado === 'cerrado') {
+            const fechaResolucion = t.fecha_cierre
+              ? new Date(t.fecha_cierre)
+              : new Date(t.actualizado_en || t.creado_en);
+            if (fechaResolucion > limite) {
+              fueraSLA++;
+            }
+          } else {
+            if (new Date() > limite) {
+              fueraSLA++;
+            }
+          }
+        });
+
+        setTicketsActivos(activos);
+        setTicketsResueltos(resueltos);
+        setTicketsFueraSLA(fueraSLA);
+
       } catch (err) {
         console.error('Error cargando sesión en dashboard:', err);
         router.push('/login');
@@ -114,7 +185,7 @@ export default function DashboardPage() {
                 {isTecnico ? 'Tickets Pendientes' : 'Tickets Activos'}
               </p>
               <h3 className="text-2xl font-bold text-slate-800 mt-0.5">
-                {isTecnico ? '3' : '1'}
+                {ticketsActivos}
               </h3>
             </div>
           </div>
@@ -128,7 +199,7 @@ export default function DashboardPage() {
                 Resueltos este mes
               </p>
               <h3 className="text-2xl font-bold text-slate-800 mt-0.5">
-                {isTecnico ? '12' : '4'}
+                {ticketsResueltos}
               </h3>
             </div>
           </div>
@@ -141,7 +212,9 @@ export default function DashboardPage() {
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Fuera de SLA
               </p>
-              <h3 className="text-2xl font-bold text-slate-800 mt-0.5">0</h3>
+              <h3 className="text-2xl font-bold text-slate-800 mt-0.5">
+                {ticketsFueraSLA}
+              </h3>
             </div>
           </div>
 
