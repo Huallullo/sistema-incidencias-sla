@@ -177,6 +177,7 @@ export class PerfilesRepository {
       nombre?: string;
       apellido?: string;
       id_rol?: number;
+      estado?: string;
     }
   ): Promise<{ success: boolean; data?: PerfilUsuario; error?: string }> {
     try {
@@ -189,6 +190,7 @@ export class PerfilesRepository {
       if (profileData.nombre !== undefined) updateData.nombre = profileData.nombre;
       if (profileData.apellido !== undefined) updateData.apellido = profileData.apellido;
       if (profileData.id_rol !== undefined) updateData.id_rol = profileData.id_rol;
+      if (profileData.estado !== undefined) updateData.estado = profileData.estado;
 
       if (profileData.nombre_completo !== undefined) {
         const full = (profileData.nombre_completo || '').trim();

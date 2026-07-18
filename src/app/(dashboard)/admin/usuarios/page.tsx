@@ -10,12 +10,19 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaSpinner,
+  FaTimes,
+  FaUser,
+  FaEnvelope,
+  FaTags,
+  FaCheckCircle,
+  FaExclamationTriangle,
 } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { UsuariosService } from '@/services/UsuariosService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
 import NotificacionesCampana from '@/components/NotificacionesCampana';
+import { actualizarUsuarioAction } from '@/actions/usuariosActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +34,18 @@ export default function GestionUsuariosPage() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<PerfilUsuario[]>([]);
   const [count, setCount] = useState(0);
+
+  // Estados para Edición de Usuario
+  const [selectedUser, setSelectedUser] = useState<PerfilUsuario | null>(null);
+  const [editNombre, setEditNombre] = useState('');
+  const [editApellido, setEditApellido] = useState('');
+  const [editCorreo, setEditCorreo] = useState('');
+  const [editRolId, setEditRolId] = useState<number>(3);
+  const [editCargo, setEditCargo] = useState('');
+  const [editEstado, setEditEstado] = useState('activo');
+  const [updatingUser, setUpdatingUser] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState(false);
 
   // Filtros y Paginación
   const [searchTerm, setSearchTerm] = useState('');
@@ -168,6 +187,54 @@ export default function GestionUsuariosPage() {
         {isActivo ? 'Activo' : 'Inactivo'}
       </span>
     );
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    setUpdatingUser(true);
+    setEditError('');
+    setEditSuccess(false);
+
+    try {
+      const res = await actualizarUsuarioAction(selectedUser.id_auth_supabase, {
+        nombre_completo: `${editNombre.trim()} ${editApellido.trim()}`,
+        correo: editCorreo.trim(),
+        cargo: editCargo.trim(),
+        id_rol: editRolId,
+        estado: editEstado,
+      });
+
+      if (res.success) {
+        setEditSuccess(true);
+        setUsers((prevUsers) =>
+          prevUsers.map((u) =>
+            u.id_auth_supabase === selectedUser.id_auth_supabase
+              ? {
+                  ...u,
+                  nombre: editNombre.trim(),
+                  apellido: editApellido.trim(),
+                  nombre_completo: `${editNombre.trim()} ${editApellido.trim()}`,
+                  correo: editCorreo.trim(),
+                  cargo: editCargo.trim(),
+                  id_rol: editRolId,
+                  rol: editRolId === 1 ? 'jefe_ti' : editRolId === 2 ? 'tecnico' : 'usuario',
+                  estado: editEstado,
+                }
+              : u
+          )
+        );
+        setTimeout(() => {
+          setSelectedUser(null);
+        }, 1000);
+      } else {
+        setEditError(res.error || 'Error al actualizar el usuario.');
+      }
+    } catch (err) {
+      setEditError('Error de red al intentar actualizar el usuario.');
+    } finally {
+      setUpdatingUser(false);
+    }
   };
 
   // Paginación helpers
@@ -345,9 +412,17 @@ export default function GestionUsuariosPage() {
                       <td className="py-4 px-6 text-right">
                         <button
                           onClick={() => {
-                            alert(`Edición en desarrollo para el usuario: ${user.nombre_completo}`);
+                            setSelectedUser(user);
+                            setEditNombre(user.nombre || '');
+                            setEditApellido(user.apellido || '');
+                            setEditCorreo(user.correo || '');
+                            setEditRolId(user.id_rol);
+                            setEditCargo(user.cargo || '');
+                            setEditEstado(user.estado || 'activo');
+                            setEditError('');
+                            setEditSuccess(false);
                           }}
-                          className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition text-slate-400 hover:text-slate-700 inline-flex items-center justify-center"
+                          className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition text-slate-400 hover:text-slate-700 inline-flex items-center justify-center cursor-pointer"
                           title="Editar usuario"
                         >
                           <FaEdit size={14} />
@@ -392,6 +467,177 @@ export default function GestionUsuariosPage() {
           )}
         </div>
       </div>
+
+      {/* ── MODAL: EDITAR USUARIO ─────────────────────────────────────── */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg border border-slate-200 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            {/* Cabecera del Modal */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600 text-base">
+                  <FaEdit />
+                </span>
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                  Editar perfil de usuario
+                </h2>
+              </div>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition cursor-pointer"
+              >
+                <FaTimes size={14} />
+              </button>
+            </div>
+
+            {/* Formulario */}
+            <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
+              {editSuccess && (
+                <div className="p-3 bg-green-50 text-green-700 rounded-xl border border-green-200 flex items-center gap-2 text-xs font-semibold">
+                  <FaCheckCircle className="shrink-0 text-green-500" />
+                  ¡Usuario actualizado con éxito!
+                </div>
+              )}
+
+              {editError && (
+                <div className="p-3 bg-red-50 text-red-700 rounded-xl border border-red-200 flex items-center gap-2 text-xs font-semibold">
+                  <FaExclamationTriangle className="shrink-0 text-red-500" />
+                  {editError}
+                </div>
+              )}
+
+              {/* Fila 1: Nombre y Apellido */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                    Nombre <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                      <FaUser />
+                    </span>
+                    <input
+                      type="text"
+                      value={editNombre}
+                      onChange={(e) => setEditNombre(e.target.value)}
+                      required
+                      className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs text-slate-800 bg-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                    Apellido <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                      <FaUser />
+                    </span>
+                    <input
+                      type="text"
+                      value={editApellido}
+                      onChange={(e) => setEditApellido(e.target.value)}
+                      required
+                      className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs text-slate-800 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Fila 2: Correo y Cargo */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                    Correo Electrónico <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                      <FaEnvelope />
+                    </span>
+                    <input
+                      type="email"
+                      value={editCorreo}
+                      onChange={(e) => setEditCorreo(e.target.value)}
+                      required
+                      className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs text-slate-800 bg-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                    Cargo / Rol Funcional
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                      <FaTags />
+                    </span>
+                    <input
+                      type="text"
+                      value={editCargo}
+                      onChange={(e) => setEditCargo(e.target.value)}
+                      placeholder="Ej. Técnico Nivel 1"
+                      className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs text-slate-800 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Fila 3: Rol del Sistema y Estado de Cuenta */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                    Rol del Sistema
+                  </label>
+                  <select
+                    value={editRolId}
+                    onChange={(e) => setEditRolId(Number(e.target.value))}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    <option value={1}>Jefe de TI</option>
+                    <option value={2}>Técnico</option>
+                    <option value={3}>Usuario</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                    Estado de Cuenta
+                  </label>
+                  <select
+                    value={editEstado}
+                    onChange={(e) => setEditEstado(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Botones de Acción */}
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSelectedUser(null)}
+                  className="px-4 py-2 border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl text-xs font-semibold cursor-pointer transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingUser}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {updatingUser ? (
+                    <FaSpinner className="animate-spin text-xs" />
+                  ) : (
+                    'Guardar cambios'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }
