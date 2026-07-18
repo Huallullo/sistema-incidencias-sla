@@ -37,6 +37,8 @@ import {
   obtenerEvaluacionTicketAction,
 } from '@/actions/evaluacionActions';
 import { obtenerArticuloPorIncidenciaAction } from '@/actions/conocimientoActions';
+import { obtenerDisponibilidadesAction } from '@/actions/disponibilidadActions';
+import { DisponibilidadTecnico } from '@/types/disponibilidad';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,6 +83,7 @@ export default function TicketsPage() {
 
   // Estado Asignación de Técnicos
   const [tecnicos, setTecnicos] = useState<PerfilUsuario[]>([]);
+  const [disponibilidadesHoy, setDisponibilidadesHoy] = useState<DisponibilidadTecnico[]>([]);
   const [updatingAssignee, setUpdatingAssignee] = useState(false);
   const [assigneeError, setAssigneeError] = useState('');
   const [assigneeSuccess, setAssigneeSuccess] = useState(false);
@@ -387,16 +390,30 @@ export default function TicketsPage() {
     loadSession();
   }, [router]);
 
-  // Carga de Técnicos para el dropdown de asignación
+  // Carga de Técnicos y sus disponibilidades para el dropdown de asignación
   useEffect(() => {
-    async function loadTecnicos() {
+    if (!currentUser?.id_auth_supabase) return;
+    const authId = currentUser.id_auth_supabase;
+
+    async function loadTecnicosAndAvailability() {
       const res = await obtenerTecnicosAction();
       if (res.success && res.data) {
         setTecnicos(res.data);
       }
+
+      // Obtener la fecha de hoy en formato local YYYY-MM-DD
+      const hoyStr = new Date().toLocaleDateString('sv-SE');
+      const dispRes = await obtenerDisponibilidadesAction(
+        { fecha_inicio: hoyStr, fecha_fin: hoyStr },
+        authId
+      );
+      if (dispRes.success && dispRes.data) {
+        setDisponibilidadesHoy(dispRes.data);
+      }
     }
-    loadTecnicos();
-  }, []);
+
+    loadTecnicosAndAvailability();
+  }, [currentUser]);
 
   // Carga y Filtrado de Tickets
   useEffect(() => {
@@ -1062,11 +1079,24 @@ export default function TicketsPage() {
                         className="flex-1 px-3 py-2.5 border border-slate-200 rounded-xl text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-60"
                       >
                         <option value="">Sin asignar / Pendiente</option>
-                        {tecnicos.map((tec) => (
-                          <option key={tec.id_perfil} value={tec.id_perfil}>
-                            {tec.nombre} {tec.apellido}
-                          </option>
-                        ))}
+                        {tecnicos.map((tec) => {
+                          const dispHoy = disponibilidadesHoy.find((d) => d.id_tecnico === tec.id_perfil);
+                          let label = `${tec.nombre} ${tec.apellido}`;
+                          if (dispHoy) {
+                            if (dispHoy.estado === 'disponible') {
+                              label = `🟢 Disponible (${dispHoy.hora_inicio.substring(0, 5)} - ${dispHoy.hora_fin.substring(0, 5)}) — ${label}`;
+                            } else {
+                              label = `🔴 No Disponible — ${label}`;
+                            }
+                          } else {
+                            label = `⚪ Sin Turno Hoy — ${label}`;
+                          }
+                          return (
+                            <option key={tec.id_perfil} value={tec.id_perfil}>
+                              {label}
+                            </option>
+                          );
+                        })}
                       </select>
                       {updatingAssignee && <FaSpinner className="animate-spin text-blue-600 text-xs shrink-0" />}
                     </div>
