@@ -1143,7 +1143,7 @@ export default function TicketsPage() {
                         Calificado por el usuario el {formatLongDate(evaluation.creado_en)}
                       </span>
                     </div>
-                  ) : currentUser && selectedTicket.creado_por === currentUser.id_perfil ? (
+                  ) : currentUser && currentUser.id_rol === 3 && selectedTicket.creado_por === currentUser.id_perfil ? (
                     <form onSubmit={handleSubmittingEvaluation} className="space-y-4">
                       {evalSuccess && (
                         <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 text-xs flex items-center gap-2">
