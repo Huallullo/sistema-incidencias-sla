@@ -14,6 +14,8 @@ import {
   LuLibrary,
   LuCircleUser,
   LuLogOut,
+  LuMonitorX,
+  LuHeart,
 } from 'react-icons/lu';
 import { FaHeadphones, FaSpinner } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
@@ -148,9 +150,13 @@ export default function DashboardLayout({
                   </button>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => alert('Gestión de Equipos en desarrollo')}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                  <button
+                    onClick={() => router.push('/admin/equipos')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/equipos')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
                   >
                     <LuMonitor className="text-lg shrink-0" />
                     <span>Equipos</span>
@@ -171,8 +177,12 @@ export default function DashboardLayout({
                 </li>
                 <li>
                   <button 
-                    onClick={() => alert('Disponibilidad de Técnicos en desarrollo')}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
+                    onClick={() => router.push('/admin/disponibilidad')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/disponibilidad')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
                   >
                     <LuCalendarClock className="text-lg shrink-0" />
                     <span>Disponibilidad</span>
@@ -188,24 +198,96 @@ export default function DashboardLayout({
               Calidad
             </p>
             <ul className="space-y-1">
-              <li>
-                <button
-                  onClick={() => alert('Evaluaciones de Servicio en desarrollo')}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
-                >
-                  <LuStar className="text-lg shrink-0" />
-                  <span>Evaluaciones</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => alert('Reporte de calidad en desarrollo')}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition font-semibold"
-                >
-                  <LuChartColumn className="text-lg shrink-0" />
-                  <span>Reporte</span>
-                </button>
-              </li>
+              {currentUser?.rol === 'jefe_ti' && (
+                <li>
+                  <button
+                    onClick={() => router.push('/admin/evaluaciones')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/evaluaciones')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LuStar className="text-lg shrink-0" />
+                    <span>Evaluaciones</span>
+                  </button>
+                </li>
+              )}
+              {currentUser?.rol === 'jefe_ti' && (
+                <li>
+                  <button
+                    onClick={() => router.push('/admin/reporte-sla')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/reporte-sla')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LuChartColumn className="text-lg shrink-0" />
+                    <span>Reporte SLA</span>
+                  </button>
+                </li>
+              )}
+              {currentUser?.rol === 'jefe_ti' && (
+                <li>
+                  <button
+                    onClick={() => router.push('/admin/reporte-carga')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/reporte-carga')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LuUsers className="text-lg shrink-0" />
+                    <span>Carga de Técnicos</span>
+                  </button>
+                </li>
+              )}
+              {currentUser?.rol === 'jefe_ti' && (
+                <li>
+                  <button
+                    onClick={() => router.push('/admin/reporte-fallas')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/reporte-fallas')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LuMonitorX className="text-lg shrink-0" />
+                    <span>Historial Fallas</span>
+                  </button>
+                </li>
+              )}
+              {currentUser?.rol === 'jefe_ti' && (
+                <li>
+                  <button
+                    onClick={() => router.push('/admin/reporte-satisfaccion')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/reporte-satisfaccion')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LuHeart className="text-lg shrink-0" />
+                    <span>Satisfacción</span>
+                  </button>
+                </li>
+              )}
+              {currentUser?.rol === 'jefe_ti' && (
+                <li>
+                  <button
+                    onClick={() => router.push('/admin/reporte-conocimiento')}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                      pathname?.startsWith('/admin/reporte-conocimiento')
+                        ? 'bg-blue-50 text-blue-600 font-bold'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LuLibrary className="text-lg shrink-0" />
+                    <span>Uso Conocimiento</span>
+                  </button>
+                </li>
+              )}
               <li>
                 <button
                   onClick={() => router.push('/dashboard/conocimiento')}
@@ -259,6 +341,19 @@ export default function DashboardLayout({
               </li>
               <li>
                 <button
+                  onClick={() => router.push('/dashboard/equipos')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                    pathname?.startsWith('/dashboard/equipos')
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <LuMonitor className="text-lg shrink-0" />
+                  <span>Equipos</span>
+                </button>
+              </li>
+              <li>
+                <button
                   onClick={() => router.push('/dashboard/conocimiento')}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
                     pathname === '/dashboard/conocimiento'
@@ -306,6 +401,19 @@ export default function DashboardLayout({
                 >
                   <LuTicket className="text-lg shrink-0" />
                   <span>Mis Reportes</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => router.push('/dashboard/equipos')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition font-semibold ${
+                    pathname?.startsWith('/dashboard/equipos')
+                      ? 'bg-blue-50 text-blue-600 font-bold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <LuMonitor className="text-lg shrink-0" />
+                  <span>Equipos</span>
                 </button>
               </li>
               <li>

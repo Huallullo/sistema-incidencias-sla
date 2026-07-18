@@ -21,7 +21,7 @@ import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
 import { ArticuloConocimiento, CategoriaArticulo, registroArticuloSchema } from '@/types/conocimiento';
 import { Incidencia } from '@/types/incidencias';
-import { registrarArticuloAction, obtenerArticulosAction } from '@/actions/conocimientoActions';
+import { registrarArticuloAction, obtenerArticulosAction, registrarConsultaAction } from '@/actions/conocimientoActions';
 import { obtenerTodasLasIncidenciasAction } from '@/actions/incidenciasActions';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +35,13 @@ export default function ConocimientoPage() {
   const [articulos, setArticulos] = useState<ArticuloConocimiento[]>([]);
   const [loadingArticulos, setLoadingArticulos] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<ArticuloConocimiento | null>(null);
+
+  const handleViewArticle = async (art: ArticuloConocimiento) => {
+    setSelectedArticle(art);
+    if (currentUser?.id_auth_supabase) {
+      await registrarConsultaAction(art.id_articulo, currentUser.id_auth_supabase);
+    }
+  };
 
   // Estados del Buscador y Filtros
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -395,7 +402,7 @@ export default function ConocimientoPage() {
           {articulos.map((art) => (
             <div
               key={art.id_articulo}
-              onClick={() => setSelectedArticle(art)}
+              onClick={() => handleViewArticle(art)}
               className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition cursor-pointer hover:border-blue-200 flex flex-col justify-between group relative overflow-hidden"
             >
               <div className="space-y-3">

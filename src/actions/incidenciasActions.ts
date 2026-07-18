@@ -1,6 +1,6 @@
 'use server';
 
-import { IncidenciaInput, Incidencia, EstadoIncidencia, HistorialEstadoTicket } from '@/types/incidencias';
+import { IncidenciaInput, Incidencia, EstadoIncidencia, HistorialEstadoTicket, cierreTicketSchema } from '@/types/incidencias';
 import { IncidenciasService } from '@/services/IncidenciasService';
 import { HistorialEstadoTicketRepository } from '@/repositories/HistorialEstadoTicketRepository';
 import { UsuariosService } from '@/services/UsuariosService';
@@ -131,6 +131,48 @@ export async function asignarTecnicoAction(
     return await IncidenciasService.asignarTecnico(incidenciaId, tecnicoId, userId);
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Error al asignar el técnico en el servidor';
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Server Action para que el Jefe de TI audite y realice el cierre definitivo de un ticket
+ */
+export async function cerrarTicketAuditadoAction(
+  incidenciaId: string,
+  observaciones: string,
+  userId: string
+): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
+  try {
+    const validated = cierreTicketSchema.safeParse({
+      id_incidencia: incidenciaId,
+      observaciones_cierre: observaciones,
+    });
+
+    if (!validated.success) {
+      const firstError = validated.error.issues[0]?.message || 'Datos de cierre de ticket inválidos.';
+      return { success: false, error: firstError };
+    }
+
+    return await IncidenciasService.cerrarTicketAuditado(incidenciaId, observaciones, userId);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Error al auditar y cerrar la incidencia en el servidor';
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Server Action para obtener todos los usuarios reportantes registrados en el sistema
+ */
+export async function obtenerUsuariosAction(): Promise<{ success: boolean; data?: PerfilUsuario[]; error?: string }> {
+  try {
+    const res = await UsuariosService.getUsers({ rol: 'usuario', limit: 100 });
+    if (res.success && res.data) {
+      return { success: true, data: res.data };
+    }
+    return { success: false, error: res.error || 'Error al obtener los usuarios' };
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Error al obtener usuarios en el servidor';
     return { success: false, error: errorMessage };
   }
 }

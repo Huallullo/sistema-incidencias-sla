@@ -5,6 +5,7 @@ import { UserRole, PerfilUsuario } from '@/types/auth';
 /**
  * Mapea un registro de la base de datos (con join de roles) a la interfaz PerfilUsuario
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapDbToPerfilUsuario(data: any): PerfilUsuario {
   if (!data) return data;
 
@@ -179,6 +180,7 @@ export class PerfilesRepository {
     }
   ): Promise<{ success: boolean; data?: PerfilUsuario; error?: string }> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const updateData: any = {};
       if (profileData.telefono_interno !== undefined) updateData.telefono_interno = profileData.telefono_interno;
       if (profileData.cargo !== undefined) updateData.cargo = profileData.cargo;

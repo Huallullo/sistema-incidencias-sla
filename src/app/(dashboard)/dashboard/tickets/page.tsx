@@ -15,6 +15,8 @@ import {
   FaTags,
   FaExclamationTriangle,
   FaCheckCircle,
+  FaStar,
+  FaRegStar,
 } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
@@ -27,8 +29,14 @@ import {
   obtenerHistorialTicketAction,
   obtenerTecnicosAction,
   asignarTecnicoAction,
+  cerrarTicketAuditadoAction,
 } from '@/actions/incidenciasActions';
 import { EstadoIncidencia, transicionesPermitidas } from '@/types/incidencias';
+import {
+  registrarEvaluacionAction,
+  obtenerEvaluacionTicketAction,
+} from '@/actions/evaluacionActions';
+import { obtenerArticuloPorIncidenciaAction } from '@/actions/conocimientoActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +71,7 @@ export default function TicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState<Incidencia | null>(null);
 
   // Estado Historial del Ticket Seleccionado
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [ticketHistory, setTicketHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -74,6 +83,168 @@ export default function TicketsPage() {
   const [updatingAssignee, setUpdatingAssignee] = useState(false);
   const [assigneeError, setAssigneeError] = useState('');
   const [assigneeSuccess, setAssigneeSuccess] = useState(false);
+
+  // Estados para Evaluación del Servicio
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [evaluation, setEvaluation] = useState<any | null>(null);
+  const [loadingEvaluation, setLoadingEvaluation] = useState(false);
+  const [evalRating, setEvalRating] = useState<number>(5);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [evalComment, setEvalComment] = useState<string>('');
+  const [submittingEval, setSubmittingEval] = useState(false);
+  const [evalError, setEvalError] = useState('');
+  const [evalSuccess, setEvalSuccess] = useState(false);
+
+  // Carga de evaluación cuando se selecciona un ticket
+  useEffect(() => {
+    if (!selectedTicket?.id_incidencia) {
+      setEvaluation(null);
+      setEvalError('');
+      setEvalSuccess(false);
+      setEvalComment('');
+      setEvalRating(5);
+      return;
+    }
+
+    const ticketId = selectedTicket.id_incidencia;
+
+    async function loadEvaluation() {
+      setLoadingEvaluation(true);
+      const res = await obtenerEvaluacionTicketAction(ticketId);
+      if (res.success && res.data) {
+        setEvaluation(res.data);
+      } else {
+        setEvaluation(null);
+      }
+      setLoadingEvaluation(false);
+    }
+    loadEvaluation();
+  }, [selectedTicket]);
+
+  const handleSubmittingEvaluation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTicket || !currentUser?.id_auth_supabase) return;
+
+    setSubmittingEval(true);
+    setEvalError('');
+    setEvalSuccess(false);
+
+    try {
+      const res = await registrarEvaluacionAction(
+        {
+          id_incidencia: selectedTicket.id_incidencia,
+          calificacion: evalRating,
+          comentario: evalComment.trim() || null,
+        },
+        currentUser.id_perfil
+      );
+
+      if (res.success && res.data) {
+        setEvalSuccess(true);
+        setEvaluation(res.data);
+        setEvalComment('');
+      } else {
+        setEvalError(res.error || 'Error al registrar la calificación.');
+      }
+    } catch (err) {
+      setEvalError('Error de red al intentar registrar la evaluación.');
+    } finally {
+      setSubmittingEval(false);
+    }
+  };
+
+  // Estados para Auditoría y Cierre (Jefe de TI)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [kbArticle, setKbArticle] = useState<any | null>(null);
+  const [loadingKb, setLoadingKb] = useState(false);
+  const [auditComments, setAuditComments] = useState('');
+  const [submittingAudit, setSubmittingAudit] = useState(false);
+  const [auditError, setAuditError] = useState('');
+  const [auditSuccess, setAuditSuccess] = useState(false);
+
+  // Carga de artículo de conocimiento cuando se selecciona un ticket
+  useEffect(() => {
+    if (!selectedTicket?.id_incidencia) {
+      setKbArticle(null);
+      setAuditComments('');
+      setAuditError('');
+      setAuditSuccess(false);
+      return;
+    }
+
+    const ticketId = selectedTicket.id_incidencia;
+
+    async function loadKbArticle() {
+      setLoadingKb(true);
+      const res = await obtenerArticuloPorIncidenciaAction(ticketId);
+      if (res.success && res.data) {
+        setKbArticle(res.data);
+      } else {
+        setKbArticle(null);
+      }
+      setLoadingKb(false);
+    }
+    loadKbArticle();
+  }, [selectedTicket]);
+
+  const handleSubmittingAudit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTicket || !currentUser?.id_auth_supabase) return;
+
+    setSubmittingAudit(true);
+    setAuditError('');
+    setAuditSuccess(false);
+
+    try {
+      const res = await cerrarTicketAuditadoAction(
+        selectedTicket.id_incidencia,
+        auditComments.trim(),
+        currentUser.id_auth_supabase
+      );
+
+      if (res.success && res.data) {
+        setAuditSuccess(true);
+        setAuditComments('');
+        
+        const fechaCierre = res.data.fecha_cierre;
+        const cerradoPor = res.data.cerrado_por;
+        const obsCierre = res.data.observaciones_cierre;
+
+        // Actualizar ticket seleccionado en la UI con los datos de cierre devueltos por el servidor
+        const updatedTicket = { 
+          ...selectedTicket, 
+          estado: 'cerrado' as const,
+          fecha_cierre: fechaCierre,
+          cerrado_por: cerradoPor,
+          observaciones_cierre: obsCierre
+        };
+        setSelectedTicket(updatedTicket);
+
+        // Actualizar la grilla local de tickets
+        setTickets((prev) =>
+          prev.map((t) => (t.id_incidencia === selectedTicket.id_incidencia ? { 
+            ...t, 
+            estado: 'cerrado' as const,
+            fecha_cierre: fechaCierre,
+            cerrado_por: cerradoPor,
+            observaciones_cierre: obsCierre
+          } : t))
+        );
+
+        // Forzar actualización del historial
+        const histResult = await obtenerHistorialTicketAction(selectedTicket.id_incidencia);
+        if (histResult.success) {
+          setTicketHistory(histResult.data || []);
+        }
+      } else {
+        setAuditError(res.error || 'Error al procesar el cierre definitivo del ticket.');
+      }
+    } catch (err) {
+      setAuditError('Error de red al intentar auditar y cerrar.');
+    } finally {
+      setSubmittingAudit(false);
+    }
+  };
 
   // Carga del Historial cuando se selecciona un ticket
   useEffect(() => {
@@ -159,6 +330,7 @@ export default function TicketsPage() {
         asignado_a: tecnicoId,
         asignado: tecnicoId ? tecnicos.find(t => t.id_perfil === tecnicoId) || null : null
       };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setSelectedTicket(updatedTicket as any);
 
       // Actualizar lista de tickets
@@ -227,6 +399,7 @@ export default function TicketsPage() {
       setErrorMsg('');
 
       // Construcción de filtros para Server Action
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const filtros: any = {
         busqueda,
         categoria: categoria !== 'todos' ? categoria : undefined,
@@ -933,6 +1106,207 @@ export default function TicketsPage() {
                   </div>
                 )}
               </div>
+
+              {/* Sección de Evaluación del Servicio (Solo si el ticket está Cerrado) */}
+              {selectedTicket.estado === 'cerrado' && (
+                <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+                    Evaluación del Servicio
+                  </span>
+                  
+                  {loadingEvaluation ? (
+                    <div className="flex justify-center items-center py-2">
+                      <FaSpinner className="animate-spin text-blue-600 text-xs" />
+                    </div>
+                  ) : evaluation ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span key={star} className="text-xl">
+                            {star <= evaluation.calificacion ? (
+                              <FaStar className="text-amber-400" />
+                            ) : (
+                              <FaRegStar className="text-slate-300" />
+                            )}
+                          </span>
+                        ))}
+                        <span className="text-xs font-bold text-slate-500 ml-2">
+                          ({evaluation.calificacion} / 5)
+                        </span>
+                      </div>
+                      {evaluation.comentario && (
+                        <p className="text-xs text-slate-600 italic bg-white border border-slate-100 rounded-lg p-2.5">
+                          "{evaluation.comentario}"
+                        </p>
+                      )}
+                      <span className="block text-[10px] text-slate-400 mt-1">
+                        Calificado por el usuario el {formatLongDate(evaluation.creado_en)}
+                      </span>
+                    </div>
+                  ) : currentUser && selectedTicket.creado_por === currentUser.id_perfil ? (
+                    <form onSubmit={handleSubmittingEvaluation} className="space-y-4">
+                      {evalSuccess && (
+                        <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 text-xs flex items-center gap-2">
+                          <FaCheckCircle className="text-emerald-500 shrink-0" />
+                          <span>¡Calificación registrada con éxito! Gracias por tu retroalimentación.</span>
+                        </div>
+                      )}
+                      {evalError && (
+                        <div className="p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 text-xs flex items-center gap-2">
+                          <FaExclamationTriangle className="text-red-500 shrink-0" />
+                          <span>{evalError}</span>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <label className="block text-[10px] text-slate-500 mb-1.5 font-semibold">Califica la atención recibida *</label>
+                        <div className="flex items-center gap-1.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setEvalRating(star)}
+                              onMouseEnter={() => setHoverRating(star)}
+                              onMouseLeave={() => setHoverRating(null)}
+                              className="text-2xl transition hover:scale-110 focus:outline-none cursor-pointer"
+                            >
+                              {(hoverRating !== null ? star <= hoverRating : star <= evalRating) ? (
+                                <FaStar className="text-amber-400" />
+                              ) : (
+                                <FaRegStar className="text-slate-300 hover:text-amber-200" />
+                              )}
+                            </button>
+                          ))}
+                          <span className="text-xs font-bold text-slate-500 ml-2">
+                            ({evalRating} / 5 estrellas)
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-[10px] text-slate-500 mb-1.5 font-semibold">Comentario u observaciones (Opcional)</label>
+                        <textarea
+                          rows={3}
+                          value={evalComment}
+                          onChange={(e) => setEvalComment(e.target.value)}
+                          placeholder="Brinda comentarios sobre la atención o sugerencias de mejora..."
+                          className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400 resize-none"
+                        />
+                      </div>
+                      
+                      <button
+                        type="submit"
+                        disabled={submittingEval}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-blue-100 disabled:opacity-75 cursor-pointer"
+                      >
+                        {submittingEval ? <FaSpinner className="animate-spin text-xs" /> : <FaPaperPlane size={10} />}
+                        <span>{submittingEval ? 'Registrando...' : 'Registrar Calificación'}</span>
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="text-xs font-semibold text-slate-400 italic">
+                      Sin evaluaciones registradas. Solo el propietario del ticket puede calificar la atención.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sección de Auditoría y Cierre Definitivo (Solo para Jefe de TI) */}
+              {currentUser?.id_rol === 1 && (
+                <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-4">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Auditoría de Cierre Definitivo
+                  </span>
+
+                  {/* 1. Mostrar solución de KB asociada (si existe) */}
+                  <div className="bg-white border border-slate-100 rounded-xl p-3.5 space-y-2">
+                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                      Solución Registrada (Base de Conocimiento)
+                    </span>
+                    {loadingKb ? (
+                      <div className="flex justify-center items-center py-2">
+                        <FaSpinner className="animate-spin text-blue-600 text-xs" />
+                      </div>
+                    ) : kbArticle ? (
+                      <div className="space-y-1 text-xs">
+                        <div className="font-bold text-slate-700">{kbArticle.titulo}</div>
+                        <div className="text-slate-500">
+                          <span className="font-semibold text-slate-600">Pasos de Solución:</span> {kbArticle.solucion_pasos}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-red-500 font-semibold italic flex items-center gap-1.5">
+                        <FaExclamationTriangle className="text-red-400" />
+                        Sin solución registrada en la base de conocimientos.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. Si el ticket está resuelto, mostrar formulario de cierre */}
+                  {selectedTicket.estado === 'resuelto' && (
+                    <form onSubmit={handleSubmittingAudit} className="space-y-3">
+                      {auditSuccess && (
+                        <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 text-xs flex items-center gap-2">
+                          <FaCheckCircle className="text-emerald-500 shrink-0" />
+                          <span>¡El ticket ha sido auditado y cerrado definitivamente con éxito!</span>
+                        </div>
+                      )}
+                      {auditError && (
+                        <div className="p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 text-xs flex items-center gap-2">
+                          <FaExclamationTriangle className="text-red-500 shrink-0" />
+                          <span>{auditError}</span>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-[10px] text-slate-500 mb-1.5 font-semibold">
+                          Observaciones de Auditoría de Cierre * (mínimo 10 caracteres)
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={auditComments}
+                          onChange={(e) => setAuditComments(e.target.value)}
+                          placeholder="Ingresa las observaciones de auditoría respecto a la atención recibida..."
+                          className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-slate-400 resize-none"
+                          required
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={submittingAudit || !kbArticle}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-emerald-100 disabled:opacity-50 cursor-pointer"
+                      >
+                        {submittingAudit ? <FaSpinner className="animate-spin text-xs" /> : <FaCheckCircle size={10} />}
+                        <span>{submittingAudit ? 'Procesando...' : 'Aprobar Cierre Definitivo'}</span>
+                      </button>
+                    </form>
+                  )}
+
+                  {/* 3. Si el ticket ya está cerrado, mostrar info de auditoría guardada */}
+                  {selectedTicket.estado === 'cerrado' && selectedTicket.observaciones_cierre && (
+                    <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3.5 space-y-2 text-xs">
+                      <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                        <FaCheckCircle />
+                        Cierre Definitivo Auditado
+                      </div>
+                      <div className="text-slate-600">
+                        <span className="font-semibold text-slate-700">Observaciones:</span> "{selectedTicket.observaciones_cierre}"
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        Cerrado el {formatLongDate(selectedTicket.fecha_cierre || '')}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 4. Si el ticket está en otro estado (abierto, en_progreso), advertir que no se puede cerrar */}
+                  {(selectedTicket.estado === 'abierto' || selectedTicket.estado === 'en_progreso') && (
+                    <div className="text-xs font-semibold text-slate-400 italic bg-white border border-slate-100 rounded-xl p-3.5">
+                      El ticket debe estar en estado "Resuelto" con solución registrada para poder proceder con la auditoría de cierre.
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Detalles Adicionales */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">

@@ -16,6 +16,12 @@ jest.mock('../src/services/AuthService', () => ({
   },
 }));
 
+jest.mock('../src/repositories/PerfilesRepository', () => ({
+  PerfilesRepository: {
+    getProfileByUserId: jest.fn(),
+  },
+}));
+
 const mockRouter = {
   push: jest.fn(),
 };

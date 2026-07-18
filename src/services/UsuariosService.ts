@@ -31,6 +31,7 @@ export interface GetUsersResult {
 /**
  * Mapea un registro de la base de datos (con join de roles) a la interfaz PerfilUsuario
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapDbToPerfilUsuario(data: any): PerfilUsuario {
   if (!data) return data;
 

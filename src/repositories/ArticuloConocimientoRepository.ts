@@ -89,4 +89,54 @@ export class ArticuloConocimientoRepository {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Busca un artículo de conocimiento asociado a una incidencia específica
+   */
+  static async findByIncidenciaId(idIncidencia: string): Promise<ArticuloConocimiento | null> {
+    try {
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
+        .from('articulos_conocimiento')
+        .select('*')
+        .eq('id_incidencia', idIncidencia)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error in ArticuloConocimientoRepository.findByIncidenciaId:', error);
+        return null;
+      }
+
+      return data as unknown as ArticuloConocimiento;
+    } catch (err) {
+      console.error('Exception in ArticuloConocimientoRepository.findByIncidenciaId:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Registra una consulta a un artículo de conocimiento
+   */
+  static async registrarConsulta(idArticulo: string, userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const client = await getSupabaseServerClient();
+      const { error } = await client
+        .from('consultas_articulo')
+        .insert({
+          id_articulo: idArticulo,
+          creado_por: userId || null,
+        });
+
+      if (error) {
+        console.error('Error in ArticuloConocimientoRepository.registrarConsulta:', error);
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Exception in ArticuloConocimientoRepository.registrarConsulta:', err);
+      const msg = err instanceof Error ? err.message : 'Error al registrar consulta';
+      return { success: false, error: msg };
+    }
+  }
 }
+

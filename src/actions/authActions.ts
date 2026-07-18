@@ -120,8 +120,12 @@ export async function verifyPasswordResetTokenAction(
       return { success: false, error: 'El enlace de recuperación ha expirado' };
     }
 
-    const rawPerfiles: any = tokenData.perfiles;
-    const idAuthSupabase = rawPerfiles?.id_auth_supabase;
+    const rawPerfiles = tokenData.perfiles as unknown as { id_auth_supabase: string } | { id_auth_supabase: string }[] | null;
+    const idAuthSupabase: string = (Array.isArray(rawPerfiles) ? rawPerfiles[0]?.id_auth_supabase : rawPerfiles?.id_auth_supabase) ?? '';
+
+    if (!idAuthSupabase) {
+      return { success: false, error: 'No se pudo obtener el identificador del usuario' };
+    }
 
     return {
       success: true,

@@ -2,6 +2,7 @@ import { IncidenciaInput, registroIncidenciaSchema, Incidencia, EstadoIncidencia
 import { IncidenciasRepository } from '@/repositories/IncidenciasRepository';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { HistorialEstadoTicketRepository } from '@/repositories/HistorialEstadoTicketRepository';
+import { ArticuloConocimientoRepository } from '@/repositories/ArticuloConocimientoRepository';
 import { getSupabaseServerClient } from '@/lib/supabaseServer';
 import { translateError } from '@/utils/errorTranslator';
 
@@ -287,6 +288,107 @@ export class IncidenciasService {
     } catch (err) {
       console.error('Exception in IncidenciasService.asignarTecnico:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error inesperado al asignar el técnico';
+      return { success: false, error: translateError(errorMessage) };
+    }
+  }
+
+  /**
+   * Cierra definitivamente un ticket de incidencia tras validar que esté resuelto,
+   * tenga una solución registrada en la base de conocimientos y que el usuario sea Jefe de TI.
+   */
+  static async cerrarTicketAuditado(
+    incidenciaId: string,
+    observaciones: string,
+    authUserId: string
+  ): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
+    try {
+      if (!authUserId) {
+        return { success: false, error: 'Sesión no válida. Inicie sesión nuevamente.' };
+      }
+
+      // 1. Validar el rol del usuario (debe ser Jefe de TI, id_rol = 1)
+      const profile = await PerfilesRepository.getProfileByUserId(authUserId);
+      if (!profile) {
+        return { success: false, error: 'No se encontró un perfil asociado a su cuenta.' };
+      }
+
+      if (profile.id_rol !== 1) {
+        return { success: false, error: 'Acceso restringido. Solo el Jefe de TI puede auditar y realizar el cierre definitivo de tickets.' };
+      }
+
+      // 2. Obtener el ticket
+      const getTicketResult = await IncidenciasRepository.getById(incidenciaId);
+      if (!getTicketResult.success || !getTicketResult.data) {
+        return { success: false, error: 'La incidencia no existe.' };
+      }
+      const ticket = getTicketResult.data;
+
+      // 3. Impedir el cierre de tickets que no estén resueltos
+      if (ticket.estado !== 'resuelto') {
+        return {
+          success: false,
+          error: `No se puede cerrar el ticket: actualmente está en estado "${ticket.estado}". Solo se pueden auditar y cerrar incidencias en estado "resuelto".`
+        };
+      }
+
+      // 4. Impedir el cierre de tickets sin una solución registrada en la base de conocimientos
+      // Buscamos un artículo que tenga este ticket vinculado
+      const kbArticle = await ArticuloConocimientoRepository.findByIncidenciaId(incidenciaId);
+      if (!kbArticle) {
+        return {
+          success: false,
+          error: 'No se puede cerrar el ticket: no se ha registrado ninguna solución en la base de conocimientos para esta incidencia.'
+        };
+      }
+
+      // 5. Proceder al cierre definitivo en base de datos
+      const closeResult = await IncidenciasRepository.closeTicket(
+        incidenciaId,
+        profile.id_perfil,
+        observaciones
+      );
+
+      if (!closeResult.success || !closeResult.data) {
+        return { success: false, error: translateError(closeResult.error) };
+      }
+
+      // 6. Registrar en el historial de cambios de estado
+      const historyResult = await HistorialEstadoTicketRepository.insert({
+        id_incidencia: incidenciaId,
+        estado_anterior: 'resuelto',
+        estado_nuevo: 'cerrado',
+        id_perfil_responsable: profile.id_perfil,
+      });
+
+      if (!historyResult.success) {
+        console.error('Warning: Failed to log state change to closure:', historyResult.error);
+      }
+
+      // 7. Notificar al usuario reportante
+      const reportante = ticket.creador;
+      if (reportante && reportante.id_auth_supabase) {
+        const client = await getSupabaseServerClient();
+        const mailBody = `Hola ${reportante.nombre},\n\nTe informamos que tu ticket con código #${ticket.codigo_ticket.substring(4)} ("${ticket.titulo}") ha sido cerrado y auditado formalmente por el Jefe de TI.\n\nDetalles del Cierre:\nFecha/Hora: ${new Date().toLocaleString('es-PE')}\nObservaciones del Cierre:\n"${observaciones}"\n\nSaludos,\nEquipo de Soporte de TI.`;
+
+        const { error: logError } = await client
+          .from('email_logs')
+          .insert({
+            user_id: reportante.id_auth_supabase,
+            email_destino: reportante.correo || 'usuario@empresa.pe',
+            asunto: `Cierre definitivo y auditoría de ticket #${ticket.codigo_ticket.substring(4)}`,
+            cuerpo: mailBody,
+            estado: 'pendiente',
+          });
+
+        if (logError) {
+          console.error('Warning: Failed to queue closure notification email:', logError);
+        }
+      }
+
+      return { success: true, data: closeResult.data };
+    } catch (err) {
+      console.error('Exception in IncidenciasService.cerrarTicketAuditado:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error inesperado al auditar e iniciar cierre definitivo';
       return { success: false, error: translateError(errorMessage) };
     }
   }

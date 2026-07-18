@@ -267,4 +267,44 @@ export class IncidenciasRepository {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Cierra definitivamente una incidencia registrando la auditoría del Jefe de TI
+   */
+  static async closeTicket(
+    id: string,
+    cerradoPor: string,
+    observaciones: string
+  ): Promise<{ success: boolean; data?: Incidencia; error?: string }> {
+    try {
+      const client = await getSupabaseServerClient();
+      const { data, error } = await client
+        .from('incidencias')
+        .update({
+          estado: 'cerrado',
+          fecha_cierre: new Date().toISOString(),
+          cerrado_por: cerradoPor,
+          observaciones_cierre: observaciones,
+          actualizado_en: new Date().toISOString()
+        })
+        .eq('id_incidencia', id)
+        .select(`
+          *,
+          creador:perfiles!creado_por(nombre, apellido, id_auth_supabase, correo),
+          asignado:perfiles!asignado_a(nombre, apellido)
+        `)
+        .single();
+
+      if (error) {
+        console.error('Error in IncidenciasRepository.closeTicket:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data as Incidencia };
+    } catch (err) {
+      console.error('Exception in IncidenciasRepository.closeTicket:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error inesperado al cerrar e auditar la incidencia';
+      return { success: false, error: errorMessage };
+    }
+  }
 }

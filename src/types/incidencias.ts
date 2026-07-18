@@ -14,8 +14,12 @@ export interface Incidencia {
   estado: EstadoIncidencia;
   creado_por: string;
   asignado_a?: string | null;
+  id_equipo?: string | null;
   creado_en: string;
-  actualizado_en: string;
+  actualizado_en: string | null;
+  fecha_cierre?: string | null;
+  cerrado_por?: string | null;
+  observaciones_cierre?: string | null;
   creador?: {
     nombre: string;
     apellido: string;
@@ -23,6 +27,7 @@ export interface Incidencia {
     correo?: string | null;
   } | null;
   asignado?: { nombre: string; apellido: string } | null;
+  equipo?: { codigo: string; nombre: string } | null;
 }
 
 // Zod Validation Schema for form registration
@@ -66,6 +71,7 @@ export const transicionesPermitidas: Record<EstadoIncidencia, EstadoIncidencia[]
 };
 
 export const transitionSchema = z.object({
+  disabledTransitions: z.boolean().optional(),
   estado_anterior: z.enum(['abierto', 'en_progreso', 'resuelto', 'cerrado']),
   estado_nuevo: z.enum(['abierto', 'en_progreso', 'resuelto', 'cerrado']),
 }).refine((data) => {
@@ -74,4 +80,16 @@ export const transitionSchema = z.object({
 }, {
   message: 'Transición de estado inválida',
 });
+
+export const cierreTicketSchema = z.object({
+  id_incidencia: z.string().uuid({
+    message: 'El identificador de la incidencia debe ser un UUID válido.',
+  }),
+  observaciones_cierre: z
+    .string()
+    .min(10, { message: 'Las observaciones de auditoría deben tener al menos 10 caracteres.' })
+    .max(1000, { message: 'Las observaciones de auditoría no pueden exceder los 1000 caracteres.' }),
+});
+
+export type CierreTicketInput = z.infer<typeof cierreTicketSchema>;
 

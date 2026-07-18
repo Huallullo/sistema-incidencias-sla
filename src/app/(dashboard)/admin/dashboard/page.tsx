@@ -95,7 +95,7 @@ export default function AdminDashboardPage() {
   // 1. Cálculos de KPIs
   const abiertosCount = tickets.filter(t => t.estado === 'abierto').length;
   const progresoCount = tickets.filter(t => t.estado === 'en_progreso').length;
-  const cerradosHoyCount = tickets.filter(t => (t.estado === 'cerrado' || t.estado === 'resuelto') && isToday(t.actualizado_en)).length;
+  const cerradosHoyCount = tickets.filter(t => (t.estado === 'cerrado' || t.estado === 'resuelto') && isToday(t.actualizado_en || '')).length;
   const nuevosHoyCount = tickets.filter(t => isToday(t.creado_en)).length;
 
   // Técnicos activos (que tienen incidencias asignadas en progreso)

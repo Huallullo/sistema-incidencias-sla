@@ -97,4 +97,20 @@ export class ConocimientoService {
       return { success: false, error: translateError(errorMessage) };
     }
   }
+
+  /**
+   * Registra una consulta a un artículo de conocimiento
+   */
+  static async registrarConsulta(idArticulo: string, userId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (!idArticulo) {
+        return { success: false, error: 'El ID del artículo es obligatorio.' };
+      }
+      return await ArticuloConocimientoRepository.registrarConsulta(idArticulo, userId);
+    } catch (err) {
+      console.error('Exception in ConocimientoService.registrarConsulta:', err);
+      const msg = err instanceof Error ? err.message : 'Error inesperado al registrar consulta';
+      return { success: false, error: translateError(msg) };
+    }
+  }
 }
