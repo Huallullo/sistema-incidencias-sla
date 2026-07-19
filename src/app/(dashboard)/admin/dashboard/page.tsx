@@ -122,8 +122,17 @@ export default function AdminDashboardPage() {
     .slice(0, 4);
 
   // 3. Distribución semanal de tickets creados (Lunes a Domingo de la semana actual)
-  const getWeeklyCounts = () => {
-    const counts = [0, 0, 0, 0, 0, 0, 0]; // Lun, Mar, Mié, Jue, Vie, Sáb, Dom
+  // 3. Distribución semanal de tickets creados por estado (Lunes a Domingo de la semana actual)
+  const getWeeklyStatusCounts = () => {
+    const counts = [
+      { abierto: 0, en_progreso: 0, cerrado: 0 }, // Lun
+      { abierto: 0, en_progreso: 0, cerrado: 0 }, // Mar
+      { abierto: 0, en_progreso: 0, cerrado: 0 }, // Mié
+      { abierto: 0, en_progreso: 0, cerrado: 0 }, // Jue
+      { abierto: 0, en_progreso: 0, cerrado: 0 }, // Vie
+      { abierto: 0, en_progreso: 0, cerrado: 0 }, // Sáb
+      { abierto: 0, en_progreso: 0, cerrado: 0 }, // Dom
+    ];
     const today = new Date();
     const currentDay = today.getDay(); // 0 = Dom, 1 = Lun...
     
@@ -139,15 +148,25 @@ export default function AdminDashboardPage() {
       if (msDiff >= 0) {
         const dayIndex = Math.floor(msDiff / (1000 * 60 * 60 * 24));
         if (dayIndex >= 0 && dayIndex < 7) {
-          counts[dayIndex]++;
+          const est = t.estado;
+          if (est === 'abierto') {
+            counts[dayIndex].abierto++;
+          } else if (est === 'en_progreso') {
+            counts[dayIndex].en_progreso++;
+          } else if (est === 'resuelto' || est === 'cerrado') {
+            counts[dayIndex].cerrado++;
+          }
         }
       }
     });
     return counts;
   };
 
-  const weeklyCounts = getWeeklyCounts();
-  const maxWeeklyCount = Math.max(...weeklyCounts, 1);
+  const weeklyStatusCounts = getWeeklyStatusCounts();
+  const maxWeeklyCount = Math.max(
+    ...weeklyStatusCounts.map(d => d.abierto + d.en_progreso + d.cerrado),
+    1
+  );
 
   // Totales de estados para el pie del gráfico
   const totalAbiertos = tickets.filter(t => t.estado === 'abierto').length;
@@ -524,29 +543,51 @@ export default function AdminDashboardPage() {
                 
                 {/* Contenedor del Gráfico de Barras real */}
                 <div className="h-44 flex items-end justify-between gap-2 px-2 border-b border-slate-100 pb-2">
-                  {[
-                    { dia: 'Lun', valor: weeklyCounts[0] },
-                    { dia: 'Mar', valor: weeklyCounts[1] },
-                    { dia: 'Mié', valor: weeklyCounts[2] },
-                    { dia: 'Jue', valor: weeklyCounts[3] },
-                    { dia: 'Vie', valor: weeklyCounts[4] },
-                    { dia: 'Sáb', valor: weeklyCounts[5] },
-                    { dia: 'Dom', valor: weeklyCounts[6] },
-                  ].map((bar, idx) => {
-                    const heightPercent = `${(bar.valor / maxWeeklyCount) * 85 + 15}%`; // Mínimo 15% si tiene valor para que sea visible
-                    const showHeight = bar.valor > 0 ? heightPercent : '0%';
-                    const barColor = getWeeklyBarColor(idx);
+                  {weeklyStatusCounts.map((dayData, idx) => {
+                    const totalDia = dayData.abierto + dayData.en_progreso + dayData.cerrado;
+                    const heightPercent = `${(totalDia / maxWeeklyCount) * 80 + 20}%`; // Mínimo 20% si tiene valor para que sea visible
+                    const showHeight = totalDia > 0 ? heightPercent : '0%';
+                    
+                    const pctAbierto = totalDia > 0 ? (dayData.abierto / totalDia) * 100 : 0;
+                    const pctProgreso = totalDia > 0 ? (dayData.en_progreso / totalDia) * 100 : 0;
+                    const pctCerrado = totalDia > 0 ? (dayData.cerrado / totalDia) * 100 : 0;
+
+                    const diasSemanales = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
                     return (
                       <div key={idx} className="flex flex-col items-center justify-end h-full flex-1 group">
                         <div className="w-full relative flex items-end justify-center flex-1 min-h-0">
-                          <div 
-                            style={{ height: showHeight }} 
-                            className={`w-full ${barColor} rounded-t-sm transition-all duration-300 group-hover:opacity-80`} 
-                            title={`${bar.valor} tickets`}
-                          />
+                          {totalDia > 0 && (
+                            <div 
+                              style={{ height: showHeight }} 
+                              className="w-full flex flex-col justify-end rounded-t-md overflow-hidden transition-all duration-300 group-hover:shadow-xs"
+                              title={`${totalDia} tickets (${dayData.abierto} abiertos, ${dayData.en_progreso} en progreso, ${dayData.cerrado} cerrados/resueltos)`}
+                            >
+                              {/* Segmento Abierto (Verde) */}
+                              {dayData.abierto > 0 && (
+                                <div 
+                                  style={{ height: `${pctAbierto}%` }} 
+                                  className="bg-emerald-500 w-full transition-all duration-300"
+                                />
+                              )}
+                              {/* Segmento En Progreso (Azul) */}
+                              {dayData.en_progreso > 0 && (
+                                <div 
+                                  style={{ height: `${pctProgreso}%` }} 
+                                  className="bg-blue-500 w-full transition-all duration-300"
+                                />
+                              )}
+                              {/* Segmento Cerrado (Gris) */}
+                              {dayData.cerrado > 0 && (
+                                <div 
+                                  style={{ height: `${pctCerrado}%` }} 
+                                  className="bg-slate-350 w-full transition-all duration-300"
+                                />
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <span className="text-[10px] text-slate-400 font-bold mt-2 shrink-0">{bar.dia}</span>
+                        <span className="text-[10px] text-slate-400 font-bold mt-2 shrink-0">{diasSemanales[idx]}</span>
                       </div>
                     );
                   })}
