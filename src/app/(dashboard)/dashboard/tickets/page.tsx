@@ -146,7 +146,7 @@ export default function TicketsPage() {
           calificacion: evalRating,
           comentario: evalComment.trim() || null,
         },
-        currentUser.id_perfil
+        currentUser.id_auth_supabase
       );
 
       if (res.success && res.data) {
