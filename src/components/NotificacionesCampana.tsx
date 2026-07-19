@@ -13,13 +13,53 @@ export default function NotificacionesCampana({ authUserId }: { authUserId: stri
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  const getReadNotificationIds = (): string[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem(`read_notifications_${authUserId}`);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const saveReadNotificationId = (id: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const readIds = getReadNotificationIds();
+      if (!readIds.includes(id)) {
+        readIds.push(id);
+        localStorage.setItem(`read_notifications_${authUserId}`, JSON.stringify(readIds));
+      }
+    } catch (e) {
+      console.error('Error saving read notification to localStorage:', e);
+    }
+  };
+
   const loadNotifications = async () => {
     if (!authUserId) return;
     setLoading(true);
     const res = await obtenerAlertasNotificacionesAction(authUserId);
     if (res.success && res.data) {
-      setAlertas(res.data);
-      const unread = res.data.some(a => !a.leido && a.id !== 'no-alerts');
+      const readIds = getReadNotificationIds();
+      // Filtrar notificaciones que ya fueron marcadas como leídas/descartadas localmente
+      const filtered = res.data.filter(a => !readIds.includes(a.id));
+      
+      // Si la lista queda vacía, colocamos la por defecto
+      if (filtered.length === 0) {
+        filtered.push({
+          id: 'no-alerts',
+          titulo: 'Sin alertas pendientes',
+          descripcion: 'No tienes tareas o actualizaciones pendientes de atención en este momento.',
+          tiempo: 'Hoy',
+          leido: true,
+          tipo: 'info',
+          link: '#',
+        });
+      }
+
+      setAlertas(filtered);
+      const unread = filtered.some(a => !a.leido && a.id !== 'no-alerts');
       setHasUnread(unread);
     }
     setLoading(false);
@@ -46,12 +86,28 @@ export default function NotificacionesCampana({ authUserId }: { authUserId: stri
 
   const handleNotificationClick = (item: AlertaNotificacion) => {
     setIsOpen(false);
-    // Marcar como leído localmente para mejorar UX
-    setAlertas(prev => prev.map(a => a.id === item.id ? { ...a, leido: true } : a));
     
-    // Si no quedan sin leer
-    const stillUnread = alertas.some(a => a.id !== item.id && !a.leido && a.id !== 'no-alerts');
-    setHasUnread(stillUnread);
+    // Guardar el ID leído en localStorage
+    saveReadNotificationId(item.id);
+
+    // Filtrar localmente para hacer desaparecer la alerta al instante
+    setAlertas(prev => {
+      const nextList = prev.filter(a => a.id !== item.id);
+      if (nextList.length === 0) {
+        nextList.push({
+          id: 'no-alerts',
+          titulo: 'Sin alertas pendientes',
+          descripcion: 'No tienes tareas o actualizaciones pendientes de atención en este momento.',
+          tiempo: 'Hoy',
+          leido: true,
+          tipo: 'info',
+          link: '#',
+        });
+      }
+      const unread = nextList.some(a => !a.leido && a.id !== 'no-alerts');
+      setHasUnread(unread);
+      return nextList;
+    });
 
     if (item.link && item.link !== '#') {
       router.push(item.link);
@@ -89,7 +145,22 @@ export default function NotificacionesCampana({ authUserId }: { authUserId: stri
             {hasUnread && (
               <button
                 onClick={() => {
-                  setAlertas(prev => prev.map(a => ({ ...a, leido: true })));
+                  alertas.forEach(a => {
+                    if (a.id !== 'no-alerts') {
+                      saveReadNotificationId(a.id);
+                    }
+                  });
+                  setAlertas([
+                    {
+                      id: 'no-alerts',
+                      titulo: 'Sin alertas pendientes',
+                      descripcion: 'No tienes tareas o actualizaciones pendientes de atención en este momento.',
+                      tiempo: 'Hoy',
+                      leido: true,
+                      tipo: 'info',
+                      link: '#',
+                    }
+                  ]);
                   setHasUnread(false);
                 }}
                 className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"

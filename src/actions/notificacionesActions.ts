@@ -108,9 +108,17 @@ export async function obtenerAlertasNotificacionesAction(
         .eq('creado_por', profile.id_perfil)
         .in('estado', ['en_progreso', 'resuelto', 'cerrado'])
         .order('actualizado_en', { ascending: false })
-        .limit(5);
+        .limit(10); // Cargamos un poco más para compensar las evaluadas que filtremos
 
-      (deUsuario || []).forEach(t => {
+      // Consultar qué incidencias de este usuario ya fueron evaluadas para no volver a pedirlas
+      const { data: evaluaciones } = await client
+        .from('evaluacion_servicio')
+        .select('id_incidencia')
+        .eq('creado_por', profile.id_perfil);
+
+      const evaluadasSet = new Set((evaluaciones || []).map(e => e.id_incidencia));
+
+      (deUsuario || []).slice(0, 5).forEach(t => {
         if (t.estado === 'en_progreso') {
           alertas.push({
             id: `tck-user-prog-${t.id_incidencia}`,
@@ -131,7 +139,8 @@ export async function obtenerAlertasNotificacionesAction(
             tipo: 'info',
             link: '/dashboard/tickets',
           });
-        } else if (t.estado === 'cerrado') {
+        } else if (t.estado === 'cerrado' && !evaluadasSet.has(t.id_incidencia)) {
+          // SOLO mostramos la alerta de evaluación si NO ha sido evaluado aún
           alertas.push({
             id: `tck-user-close-${t.id_incidencia}`,
             titulo: 'Ticket Cerrado',
