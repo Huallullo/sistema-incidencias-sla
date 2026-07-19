@@ -41,10 +41,10 @@ import { obtenerDisponibilidadesAction } from '@/actions/disponibilidadActions';
 import { DisponibilidadTecnico } from '@/types/disponibilidad';
 import { obtenerPrioridadesAction } from '@/actions/prioridadesActions';
 import { PrioridadServicio } from '@/types/prioridadServicio';
-import { obtenerDetalleEquipoAction } from '@/actions/equipoActions';
+import { obtenerDetalleEquipoAction, obtenerEquiposAction } from '@/actions/equipoActions';
 import { EvaluacionServicio } from '@/types/evaluacion';
 import { ArticuloConocimiento } from '@/types/conocimiento';
-import { DetalleEquipoInformatico } from '@/types/equipo';
+import { DetalleEquipoInformatico, EquipoInformatico } from '@/types/equipo';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,6 +72,8 @@ export default function TicketsPage() {
   const [newPrioridad, setNewPrioridad] = useState<PrioridadIncidencia>('media');
   const [newDescripcion, setNewDescripcion] = useState('');
   const [newEquipo, setNewEquipo] = useState('');
+  const [equiposDisponibles, setEquiposDisponibles] = useState<EquipoInformatico[]>([]);
+  const [loadingEquipos, setLoadingEquipos] = useState(false);
   const [submittingNew, setSubmittingNew] = useState(false);
   const [newError, setNewError] = useState('');
   const [newSuccess, setNewSuccess] = useState(false);
@@ -517,6 +519,7 @@ export default function TicketsPage() {
         categoria: newCategoria,
         prioridad: newPrioridad,
         descripcion: newDescripcion.trim(),
+        ...(newEquipo ? { id_equipo: newEquipo } : {}),
       },
       authId
     );
@@ -650,7 +653,13 @@ export default function TicketsPage() {
 
           {/* Botón "+ Nuevo" */}
           <button
-            onClick={() => setIsNewModalOpen(true)}
+            onClick={async () => {
+              setIsNewModalOpen(true);
+              setLoadingEquipos(true);
+              const res = await obtenerEquiposAction({ estado_operativo: 'operativo' });
+              if (res.success && res.data) setEquiposDisponibles(res.data);
+              setLoadingEquipos(false);
+            }}
             className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition text-sm font-bold flex items-center gap-2 shadow-sm shadow-blue-100"
           >
             <FaPlus size={12} />
@@ -940,13 +949,28 @@ export default function TicketsPage() {
                 <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">
                   Equipo afectado (opcional)
                 </label>
-                <input
-                  type="text"
-                  value={newEquipo}
-                  onChange={(e) => setNewEquipo(e.target.value)}
-                  placeholder="Seleccionar o escribir código de inventario"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800 placeholder-slate-400 bg-white"
-                />
+                {loadingEquipos ? (
+                  <div className="flex items-center gap-2 text-xs text-slate-400 py-2.5">
+                    <FaSpinner className="animate-spin" />
+                    Cargando equipos registrados...
+                  </div>
+                ) : (
+                  <select
+                    value={newEquipo}
+                    onChange={(e) => setNewEquipo(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-800 bg-white"
+                  >
+                    <option value="">-- Sin equipo afectado --</option>
+                    {equiposDisponibles.map((eq) => (
+                      <option key={eq.id_equipo} value={eq.id_equipo}>
+                        {eq.nombre} — {eq.codigo} ({eq.tipo})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {equiposDisponibles.length === 0 && !loadingEquipos && (
+                  <p className="text-[10px] text-slate-400 mt-1">No hay equipos registrados en el sistema.</p>
+                )}
               </div>
 
               {/* Botones de Acción */}
@@ -978,10 +1002,10 @@ export default function TicketsPage() {
 
       {/* ── MODAL: DETALLE DE TICKET (CUMPLIENDO CRITERIO 4) ──────────── */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl border border-slate-200 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-start sm:items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] my-auto flex flex-col border border-slate-200 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
             {/* Cabecera */}
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <span className="text-blue-600 text-lg">
                   <FaInfoCircle />
@@ -999,7 +1023,7 @@ export default function TicketsPage() {
             </div>
 
             {/* Contenido del Detalle */}
-            <div className="p-8 space-y-6">
+            <div className="p-8 space-y-6 overflow-y-auto flex-1">
               {/* Bloque Asunto */}
               <div>
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Asunto / Título</span>

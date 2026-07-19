@@ -114,33 +114,115 @@ export default function ReporteConocimientoPage() {
     try {
       const { jsPDF } = await import('jspdf');
       const autoTable = (await import('jspdf-autotable')).default;
-      const doc = new jsPDF({ orientation: 'portrait', format: 'a4' });
+      const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
 
-      doc.setFontSize(16); doc.setFont('helvetica', 'bold');
-      doc.text('Reporte de Uso de Base de Conocimiento', 14, 18);
-      doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-      doc.text(`Generado: ${new Date().toLocaleString('es-PE')}  |  Total Artículos: ${reportData.resumen.total_articulos}  |  Total Consultas: ${reportData.resumen.total_consultas}`, 14, 26);
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const primaryBlue: [number, number, number] = [30, 64, 175];
+      const lightBlue: [number, number, number] = [239, 246, 255];
+      const white: [number, number, number] = [255, 255, 255];
+      const darkText: [number, number, number] = [15, 23, 42];
+      const mutedText: [number, number, number] = [100, 116, 139];
 
+      // ── HEADER BAND ──────────────────────────────────────────────
+      doc.setFillColor(...primaryBlue);
+      doc.rect(0, 0, pageW, 38, 'F');
+
+      doc.setTextColor(...white);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('HELP DESK SLA TI', 14, 16);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('Reporte de Uso y Consultas de la Base de Conocimiento', 14, 24);
+
+      doc.setFontSize(8);
+      const now = new Date().toLocaleString('es-PE', { dateStyle: 'long', timeStyle: 'short' });
+      doc.text(`Generado: ${now}`, pageW - 14, 16, { align: 'right' });
+      doc.text(`Total artículos: ${reportData.resumen.total_articulos}`, pageW - 14, 24, { align: 'right' });
+
+      // ── SEPARATOR ────────────────────────────────────────────────
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.3);
+      doc.line(14, 42, pageW - 14, 42);
+
+      // ── KPI SUMMARY ROW ──────────────────────────────────────────
+      let yPos = 46;
+      const kpis = [
+        { label: 'Total Artículos',       value: String(reportData.resumen.total_articulos) },
+        { label: 'Consultas Totales',      value: String(reportData.resumen.total_consultas) },
+        { label: 'Falla Más Recurrente',   value: reportData.resumen.categoria_mas_consultada },
+        { label: 'Solución Más Usada',     value: reportData.resumen.articulo_mas_consultado.split(' ')[0] },
+      ];
+      const kpiBoxW = (pageW - 28) / kpis.length;
+      kpis.forEach((kpi, i) => {
+        const x = 14 + i * kpiBoxW;
+        doc.setFillColor(...lightBlue);
+        doc.roundedRect(x, yPos, kpiBoxW - 4, 22, 2, 2, 'F');
+        doc.setTextColor(...mutedText);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.text(kpi.label.toUpperCase(), x + (kpiBoxW - 4) / 2, yPos + 7, { align: 'center' });
+        doc.setTextColor(...primaryBlue);
+        doc.setFontSize(13);
+        doc.text(kpi.value, x + (kpiBoxW - 4) / 2, yPos + 17, { align: 'center' });
+      });
+      yPos += 30;
+
+      // ── TABLE ────────────────────────────────────────────────────
       const rows = articulosFiltrados.map((art) => [
-        art.titulo,
+        art.titulo.substring(0, 55),
         getCategoriaLabel(art.categoria),
         art.autor,
-        art.total_consultas.toString(),
+        art.total_consultas,
         new Date(art.fecha_creacion).toLocaleDateString('es-PE'),
       ]);
 
       autoTable(doc, {
-        startY: 32,
-        head: [['Título del Artículo', 'Categoría', 'Autor/Técnico', 'Consultas', 'Fecha Creación']],
+        startY: yPos,
+        head: [['Título del Artículo', 'Categoría', 'Autor / Técnico', 'Consultas / Vistas', 'Fecha Creación']],
         body: rows,
-        styles: { fontSize: 8, cellPadding: 3 },
-        headStyles: { fillColor: [37, 99, 235], fontSize: 8, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
+        styles: { fontSize: 7.5, cellPadding: 2.5, textColor: darkText },
+        headStyles: {
+          fillColor: primaryBlue,
+          textColor: white,
+          fontSize: 7.5,
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        columnStyles: { 3: { halign: 'center' }, 4: { halign: 'center' } },
+        alternateRowStyles: { fillColor: lightBlue },
+        didDrawPage: (data: any) => {
+          doc.setFontSize(7);
+          doc.setTextColor(...mutedText);
+          doc.text(
+            `Generado por Help Desk SLA TI — Confidencial | Página ${data.pageNumber}`,
+            pageW / 2, pageH - 8, { align: 'center' }
+          );
+          if (data.pageNumber > 1) {
+            doc.setFillColor(...primaryBlue);
+            doc.rect(0, 0, pageW, 14, 'F');
+            doc.setTextColor(...white);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.text('HELP DESK SLA TI', 14, 10);
+          }
+        },
+        didParseCell: (data: any) => {
+          if (data.section === 'body' && data.column.index === 3) {
+            data.cell.styles.textColor = primaryBlue;
+            data.cell.styles.fontStyle = 'bold';
+          }
+        },
       });
 
       doc.save(`reporte_uso_conocimiento_${new Date().toISOString().slice(0, 10)}.pdf`);
       setToast({ message: 'PDF exportado correctamente.', type: 'success' });
-    } catch { setToast({ message: 'Error al generar el PDF.', type: 'error' }); }
+    } catch (e) {
+      console.error(e);
+      setToast({ message: 'Error al generar el PDF.', type: 'error' });
+    }
   };
 
   // ─── Exportar Excel ──────────────────────────────────────────────────────

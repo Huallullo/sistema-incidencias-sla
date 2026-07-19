@@ -167,43 +167,107 @@ export default function ReporteSLAPage() {
       const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
 
-      doc.setFontSize(16);
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const primaryBlue: [number, number, number] = [30, 64, 175];
+      const lightBlue: [number, number, number] = [239, 246, 255];
+      const white: [number, number, number] = [255, 255, 255];
+      const darkText: [number, number, number] = [15, 23, 42];
+      const mutedText: [number, number, number] = [100, 116, 139];
+
+      // ── HEADER BAND ──────────────────────────────────────────────
+      doc.setFillColor(...primaryBlue);
+      doc.rect(0, 0, pageW, 38, 'F');
+
+      doc.setTextColor(...white);
       doc.setFont('helvetica', 'bold');
-      doc.text('Reporte de Cumplimiento SLA', 14, 18);
+      doc.setFontSize(16);
+      doc.text('HELP DESK SLA TI', 14, 16);
 
-      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Generado: ${new Date().toLocaleString('es-PE')}`, 14, 25);
-      doc.text(
-        `Total: ${reportData.resumen.total_tickets} tickets | Cumplimiento: ${reportData.resumen.porcentaje_cumplimiento}%`,
-        14, 31
-      );
+      doc.setFontSize(9);
+      doc.text('Análisis de Cumplimiento de Acuerdos de Nivel de Servicio', 14, 24);
 
+      doc.setFontSize(8);
+      const now = new Date().toLocaleString('es-PE', { dateStyle: 'long', timeStyle: 'short' });
+      doc.text(`Generado: ${now}`, pageW - 14, 16, { align: 'right' });
+      doc.text(`Total registros: ${reportData.resumen.total_tickets}`, pageW - 14, 24, { align: 'right' });
+
+      // ── SEPARATOR ────────────────────────────────────────────────
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.3);
+      doc.line(14, 42, pageW - 14, 42);
+
+      // ── KPI SUMMARY ROW ──────────────────────────────────────────
+      let yPos = 46;
+      const kpis = [
+        { label: 'Total Tickets',    value: String(reportData.resumen.total_tickets) },
+        { label: '% Cumplimiento',   value: `${reportData.resumen.porcentaje_cumplimiento}%` },
+        { label: 'Cumplen SLA',      value: String(reportData.resumen.tickets_cumple) },
+        { label: 'No Cumplen SLA',   value: String(reportData.resumen.tickets_no_cumple) },
+      ];
+      const kpiBoxW = (pageW - 28) / kpis.length;
+      kpis.forEach((kpi, i) => {
+        const x = 14 + i * kpiBoxW;
+        doc.setFillColor(...lightBlue);
+        doc.roundedRect(x, yPos, kpiBoxW - 4, 22, 2, 2, 'F');
+        doc.setTextColor(...mutedText);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.text(kpi.label.toUpperCase(), x + (kpiBoxW - 4) / 2, yPos + 7, { align: 'center' });
+        doc.setTextColor(...primaryBlue);
+        doc.setFontSize(13);
+        doc.text(kpi.value, x + (kpiBoxW - 4) / 2, yPos + 17, { align: 'center' });
+      });
+      yPos += 30;
+
+      // ── TABLE ────────────────────────────────────────────────────
       const rows = ticketsFiltrados.map((t) => [
         t.codigo_ticket,
-        t.titulo.substring(0, 45),
+        t.titulo.substring(0, 40),
         PRIORIDAD_LABELS[t.prioridad] ?? t.prioridad,
         ESTADO_LABELS[t.estado] ?? t.estado,
         t.tecnico_nombre,
         formatMin(t.sla_tiempo_respuesta_min),
         formatMin(t.tiempo_respuesta_real_min),
-        t.cumple_respuesta === null ? 'N/A' : t.cumple_respuesta ? 'SÍ' : 'NO',
         formatMin(t.sla_tiempo_resolucion_min),
         formatMin(t.tiempo_resolucion_real_min),
         t.cumple_sla === null ? 'N/A' : t.cumple_sla ? 'SÍ' : 'NO',
       ]);
 
       autoTable(doc, {
-        startY: 37,
-        head: [['Ticket', 'Título', 'Prioridad', 'Estado', 'Técnico', 'SLA Resp.', 'Real Resp.', 'Resp. OK', 'SLA Resol.', 'Real Resol.', 'SLA OK']],
+        startY: yPos,
+        head: [['Ticket', 'Título', 'Prioridad', 'Estado', 'Técnico', 'T.Resp.SLA', 'T.Resp.Real', 'T.Resol.SLA', 'T.Resol.Real', 'SLA']],
         body: rows,
-        styles: { fontSize: 7, cellPadding: 2 },
-        headStyles: { fillColor: [37, 99, 235], fontSize: 7, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        didParseCell: (data: CellHookData) => {
-          if (data.section === 'body' && data.column.index === 10) {
+        styles: { fontSize: 7.5, cellPadding: 2.5, textColor: darkText },
+        headStyles: {
+          fillColor: primaryBlue,
+          textColor: white,
+          fontSize: 7.5,
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        alternateRowStyles: { fillColor: lightBlue },
+        didDrawPage: (data: any) => {
+          doc.setFontSize(7);
+          doc.setTextColor(...mutedText);
+          doc.text(
+            `Generado por Help Desk SLA TI — Confidencial | Página ${data.pageNumber}`,
+            pageW / 2, pageH - 8, { align: 'center' }
+          );
+          if (data.pageNumber > 1) {
+            doc.setFillColor(...primaryBlue);
+            doc.rect(0, 0, pageW, 14, 'F');
+            doc.setTextColor(...white);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.text('HELP DESK SLA TI', 14, 10);
+          }
+        },
+        didParseCell: (data: any) => {
+          if (data.section === 'body' && data.column.index === 9) {
             if (data.cell.raw === 'SÍ') data.cell.styles.textColor = [16, 185, 129];
-            else if (data.cell.raw === 'NO') data.cell.styles.textColor = [239, 68, 68];
+            else if (data.cell.raw === 'NO') data.cell.styles.textColor = [220, 38, 38];
           }
         },
       });
@@ -211,6 +275,7 @@ export default function ReporteSLAPage() {
       doc.save(`reporte_sla_${new Date().toISOString().slice(0, 10)}.pdf`);
       setToast({ message: 'Reporte exportado en PDF correctamente.', type: 'success' });
     } catch (e) {
+      console.error(e);
       setToast({ message: 'Error al generar el PDF. Intente de nuevo.', type: 'error' });
     }
   };

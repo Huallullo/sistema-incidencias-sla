@@ -216,30 +216,128 @@ export default function ReporteFallasPage() {
       const autoTable = (await import('jspdf-autotable')).default;
       const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
 
-      doc.setFontSize(16); doc.setFont('helvetica', 'bold');
-      doc.text('Reporte de Historial de Fallas por Equipo Informático', 14, 18);
-      doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-      doc.text(`Generado: ${new Date().toLocaleString('es-PE')}  |  Total equipos: ${reportData.total_equipos_con_fallas}  |  Total fallas: ${reportData.total_incidencias}`, 14, 26);
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const primaryBlue: [number, number, number] = [30, 64, 175];
+      const lightBlue: [number, number, number] = [239, 246, 255];
+      const white: [number, number, number] = [255, 255, 255];
+      const darkText: [number, number, number] = [15, 23, 42];
+      const mutedText: [number, number, number] = [100, 116, 139];
 
+      // ── HEADER BAND ──────────────────────────────────────────────
+      doc.setFillColor(...primaryBlue);
+      doc.rect(0, 0, pageW, 38, 'F');
+
+      doc.setTextColor(...white);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('HELP DESK SLA TI', 14, 16);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('Historial de Fallas por Equipo Informático', 14, 24);
+
+      doc.setFontSize(8);
+      const now = new Date().toLocaleString('es-PE', { dateStyle: 'long', timeStyle: 'short' });
+      doc.text(`Generado: ${now}`, pageW - 14, 16, { align: 'right' });
+      doc.text(`Total fallas: ${reportData.total_incidencias}`, pageW - 14, 24, { align: 'right' });
+
+      // ── SEPARATOR ────────────────────────────────────────────────
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.3);
+      doc.line(14, 42, pageW - 14, 42);
+
+      // ── KPI SUMMARY ROW ──────────────────────────────────────────
+      let yPos = 46;
+      const kpis = [
+        { label: 'Total Incidencias',  value: String(reportData.total_incidencias) },
+        { label: 'Equipos con Fallas', value: String(reportData.total_equipos_con_fallas) },
+        { label: 'Promedio Fallas',    value: String(reportData.promedio_fallas_equipo) },
+        { label: 'Equipo Más Afect.',  value: reportData.equipo_mas_fallas.split(' ')[0] },
+      ];
+      const kpiBoxW = (pageW - 28) / kpis.length;
+      kpis.forEach((kpi, i) => {
+        const x = 14 + i * kpiBoxW;
+        doc.setFillColor(...lightBlue);
+        doc.roundedRect(x, yPos, kpiBoxW - 4, 22, 2, 2, 'F');
+        doc.setTextColor(...mutedText);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.text(kpi.label.toUpperCase(), x + (kpiBoxW - 4) / 2, yPos + 7, { align: 'center' });
+        doc.setTextColor(...primaryBlue);
+        doc.setFontSize(13);
+        doc.text(kpi.value, x + (kpiBoxW - 4) / 2, yPos + 17, { align: 'center' });
+      });
+      yPos += 30;
+
+      // ── TABLE ────────────────────────────────────────────────────
       const rows = equiposFiltrados.map(eq => [
-        eq.nombre, eq.codigo, eq.tipo, eq.ubicacion, eq.estado_operativo,
-        eq.total_fallas, eq.fallas_abiertas, eq.fallas_en_progreso,
+        eq.nombre,
+        eq.codigo,
+        eq.tipo,
+        eq.ubicacion,
+        eq.estado_operativo,
+        eq.total_fallas,
+        eq.fallas_abiertas,
+        eq.fallas_en_progreso,
         eq.fallas_resueltas + eq.fallas_cerradas,
         eq.tiempo_promedio_hrs !== null ? `${eq.tiempo_promedio_hrs}h` : '—',
         eq.ultima_falla ? new Date(eq.ultima_falla).toLocaleDateString('es-PE') : '—',
       ]);
 
       autoTable(doc, {
-        startY: 32,
-        head: [['Equipo','Código','Tipo','Ubicación','Estado','Total Fallas','Abiertos','En Proceso','Resueltos','T.Prom Res.','Última Falla']],
+        startY: yPos,
+        head: [['Equipo', 'Código', 'Tipo', 'Ubicación', 'Estado', 'Total Fallas', 'Abiertos', 'En Proceso', 'Resueltos', 'T.Prom Res.', 'Última Falla']],
         body: rows,
-        styles: { fontSize: 7, cellPadding: 2 },
-        headStyles: { fillColor: [220,38,38], fontSize: 7, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248,250,252] },
+        styles: { fontSize: 7.5, cellPadding: 2.5, textColor: darkText },
+        headStyles: {
+          fillColor: primaryBlue,
+          textColor: white,
+          fontSize: 7.5,
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        alternateRowStyles: { fillColor: lightBlue },
+        didDrawPage: (data: any) => {
+          doc.setFontSize(7);
+          doc.setTextColor(...mutedText);
+          doc.text(
+            `Generado por Help Desk SLA TI — Confidencial | Página ${data.pageNumber}`,
+            pageW / 2, pageH - 8, { align: 'center' }
+          );
+          if (data.pageNumber > 1) {
+            doc.setFillColor(...primaryBlue);
+            doc.rect(0, 0, pageW, 14, 'F');
+            doc.setTextColor(...white);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.text('HELP DESK SLA TI', 14, 10);
+          }
+        },
+        didParseCell: (data: any) => {
+          if (data.section === 'body') {
+            // Color abiertos red
+            if (data.column.index === 6 && Number(data.cell.raw) > 0)
+              data.cell.styles.textColor = [220, 38, 38];
+            // Color total fallas red
+            if (data.column.index === 5 && Number(data.cell.raw) > 0)
+              data.cell.styles.textColor = [220, 38, 38];
+            // Color estado operativo
+            if (data.column.index === 4) {
+              if (data.cell.raw === 'operativo') data.cell.styles.textColor = [16, 185, 129];
+              else if (data.cell.raw === 'mantenimiento') data.cell.styles.textColor = [245, 158, 11];
+              else data.cell.styles.textColor = [220, 38, 38];
+            }
+          }
+        },
       });
-      doc.save(`reporte_fallas_equipos_${new Date().toISOString().slice(0,10)}.pdf`);
+
+      doc.save(`reporte_fallas_equipos_${new Date().toISOString().slice(0, 10)}.pdf`);
       setToast({ message: 'PDF exportado correctamente.', type: 'success' });
-    } catch { setToast({ message: 'Error al generar el PDF.', type: 'error' }); }
+    } catch (e) {
+      console.error(e);
+      setToast({ message: 'Error al generar el PDF.', type: 'error' });
+    }
   };
 
   // ─── Exportar Excel ──────────────────────────────────────────────────────
