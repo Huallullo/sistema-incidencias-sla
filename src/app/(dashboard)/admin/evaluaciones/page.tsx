@@ -15,7 +15,7 @@ import {
   LuTicket,
   LuMessageSquare,
 } from 'react-icons/lu';
-import { FaStar, FaRegStar } from 'react-icons/fa';
+import { FaStar, FaRegStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
 import { PerfilUsuario } from '@/types/auth';
@@ -78,6 +78,7 @@ export default function EvaluacionesPage() {
   const [filterFechaInicio, setFilterFechaInicio] = useState('');
   const [filterFechaFin, setFilterFechaFin] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Modales y Feedback
   const [selectedEval, setSelectedEval] = useState<EvaluacionServicioDetallada | null>(null);
@@ -158,8 +159,10 @@ export default function EvaluacionesPage() {
     const res = await consultarEvaluacionesAction(filterObj, session.user.id);
     if (res.success && res.data) {
       setEvaluaciones(res.data);
+      setCurrentPage(1);
     } else {
       setEvaluaciones([]);
+      setCurrentPage(1);
       if (res.error) {
         setToast({ message: res.error, type: 'error' });
       }
@@ -196,6 +199,11 @@ export default function EvaluacionesPage() {
       busqueda: '',
     });
   };
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(evaluaciones.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentItems = evaluaciones.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#f3f4f6]">
@@ -362,7 +370,7 @@ export default function EvaluacionesPage() {
                   </td>
                 </tr>
               ) : (
-                evaluaciones.map((item) => (
+                currentItems.map((item) => (
                   <tr
                     key={item.id_evaluacion}
                     onClick={() => setSelectedEval(item)}
@@ -407,6 +415,34 @@ export default function EvaluacionesPage() {
               )}
             </tbody>
           </table>
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-semibold">
+                Mostrando página {currentPage} de {totalPages} ({evaluaciones.length} evaluaciones totales)
+              </span>
+
+              <div className="flex gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => prev - 1)}
+                  className="p-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center cursor-pointer"
+                  title="Página anterior"
+                >
+                  <FaChevronLeft size={10} />
+                </button>
+                <button
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  onClick={() => setCurrentPage((prev) => prev + 1)}
+                  className="p-2 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center cursor-pointer"
+                  title="Página siguiente"
+                >
+                  <FaChevronRight size={10} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

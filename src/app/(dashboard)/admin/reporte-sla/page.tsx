@@ -237,6 +237,7 @@ export default function ReporteSLAPage() {
 
       autoTable(doc, {
         startY: yPos,
+        margin: { top: 22, left: 14, right: 14, bottom: 15 },
         head: [['Ticket', 'Título', 'Prioridad', 'Estado', 'Técnico', 'T.Resp.SLA', 'T.Resp.Real', 'T.Resol.SLA', 'T.Resol.Real', 'SLA']],
         body: rows,
         styles: { fontSize: 7.5, cellPadding: 2.5, textColor: darkText },

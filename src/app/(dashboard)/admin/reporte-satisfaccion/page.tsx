@@ -190,6 +190,7 @@ export default function ReporteSatisfaccionPage() {
 
       autoTable(doc, {
         startY: yPos,
+        margin: { top: 22, left: 14, right: 14, bottom: 15 },
         head: [['Ticket', 'Incidencia', 'Usuario Creador', 'Técnico Asignado', 'Calificación', 'Comentario', 'Fecha']],
         body: rows,
         styles: { fontSize: 7.5, cellPadding: 2.5, textColor: darkText },

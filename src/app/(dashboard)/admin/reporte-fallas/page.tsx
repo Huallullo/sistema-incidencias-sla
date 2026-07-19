@@ -287,6 +287,7 @@ export default function ReporteFallasPage() {
 
       autoTable(doc, {
         startY: yPos,
+        margin: { top: 22, left: 14, right: 14, bottom: 15 },
         head: [['Equipo', 'Código', 'Tipo', 'Ubicación', 'Estado', 'Total Fallas', 'Abiertos', 'En Proceso', 'Resueltos', 'T.Prom Res.', 'Última Falla']],
         body: rows,
         styles: { fontSize: 7.5, cellPadding: 2.5, textColor: darkText },

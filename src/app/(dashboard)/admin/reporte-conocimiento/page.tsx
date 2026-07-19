@@ -181,6 +181,7 @@ export default function ReporteConocimientoPage() {
 
       autoTable(doc, {
         startY: yPos,
+        margin: { top: 22, left: 14, right: 14, bottom: 15 },
         head: [['Título del Artículo', 'Categoría', 'Autor / Técnico', 'Consultas / Vistas', 'Fecha Creación']],
         body: rows,
         styles: { fontSize: 7.5, cellPadding: 2.5, textColor: darkText },

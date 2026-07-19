@@ -77,16 +77,18 @@ function NuevaDisponibilidadModal({
   onSuccess,
   userId,
   tecnicos,
+  defaultTecnicoId,
 }: {
   onClose: () => void;
   onSuccess: () => void;
   userId: string;
   tecnicos: PerfilUsuario[];
+  defaultTecnicoId?: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const [mode, setMode] = useState<'single' | 'range'>('single');
   const [form, setForm] = useState({
-    id_tecnico: '',
+    id_tecnico: defaultTecnicoId || '',
     fecha: new Date().toISOString().split('T')[0],
     fecha_inicio: new Date().toISOString().split('T')[0],
     fecha_fin: new Date().toISOString().split('T')[0],
@@ -635,8 +637,11 @@ export default function DisponibilidadPage() {
 
   const [tecnicos, setTecnicos] = useState<PerfilUsuario[]>([]);
   const [disponibilidades, setDisponibilidades] = useState<DisponibilidadTecnico[]>([]);
-  const [filtered, setFiltered] = useState<DisponibilidadTecnico[]>([]);
   const [loadingList, setLoadingList] = useState(true);
+
+  // Estados de expansión y técnicos seleccionados por defecto
+  const [expandedTecnicos, setExpandedTecnicos] = useState<Record<string, boolean>>({});
+  const [defaultTecnicoId, setDefaultTecnicoId] = useState<string | undefined>(undefined);
 
   // Filtros locales e interacción con backend
   const [searchQuery, setSearchQuery] = useState('');
@@ -651,6 +656,40 @@ export default function DisponibilidadPage() {
   const [deletingDispId, setDeletingDispId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const toggleExpand = (id: string) => {
+    setExpandedTecnicos((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const groupedList = tecnicos
+    .map((tec) => {
+      let schs = disponibilidades.filter((d) => d.id_tecnico === tec.id_perfil);
+      if (filterTurno !== 'todos') {
+        schs = schs.filter((d) => d.turno === filterTurno);
+      }
+      if (filterEstado !== 'todos') {
+        schs = schs.filter((d) => d.estado === filterEstado);
+      }
+      return {
+        tecnico: tec,
+        schedules: schs,
+      };
+    })
+    .filter((item) => {
+      const q = searchQuery.toLowerCase().trim();
+      if (q === '') return true;
+      const full = `${item.tecnico.nombre} ${item.tecnico.apellido}`.toLowerCase();
+      return full.includes(q) || (item.tecnico.correo || '').toLowerCase().includes(q);
+    })
+    .filter((item) => {
+      if (filterTurno !== 'todos' || filterEstado !== 'todos') {
+        return item.schedules.length > 0;
+      }
+      return true;
+    });
 
   // 1. Cargar sesión y verificar rol de Jefe de TI
   useEffect(() => {
@@ -710,31 +749,7 @@ export default function DisponibilidadPage() {
     }
   }, [currentUser, filterFechaInicio, filterFechaFin]);
 
-  // 3. Filtrar reactivamente en cliente por texto, turno y estado
-  useEffect(() => {
-    let result = [...disponibilidades];
 
-    // Búsqueda por técnico
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      result = result.filter((d) => {
-        const full = `${d.tecnico?.nombre || ''} ${d.tecnico?.apellido || ''}`.toLowerCase();
-        return full.includes(q) || d.tecnico?.correo.toLowerCase().includes(q);
-      });
-    }
-
-    // Filtro por turno
-    if (filterTurno !== 'todos') {
-      result = result.filter((d) => d.turno === filterTurno);
-    }
-
-    // Filtro por estado
-    if (filterEstado !== 'todos') {
-      result = result.filter((d) => d.estado === filterEstado);
-    }
-
-    setFiltered(result);
-  }, [searchQuery, filterTurno, filterEstado, disponibilidades]);
 
   // 4. Eliminar disponibilidad
   const handleConfirmDelete = async () => {
@@ -791,7 +806,10 @@ export default function DisponibilidadPage() {
         </div>
 
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            setDefaultTecnicoId(undefined);
+            setModalOpen(true);
+          }}
           className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition flex items-center gap-2 shadow-sm shadow-blue-500/10 cursor-pointer self-start md:self-auto"
         >
           <LuPlus className="text-base" />
@@ -892,7 +910,7 @@ export default function DisponibilidadPage() {
               <p className="text-xs font-semibold text-slate-500">Cargando disponibilidades...</p>
             </div>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : groupedList.length === 0 ? (
           <div className="h-full bg-white border border-slate-100 rounded-2xl flex flex-col items-center justify-center p-8 text-center shadow-sm">
             <div className="w-14 h-14 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-4">
               <LuCalendarClock className="text-2xl" />
@@ -903,82 +921,161 @@ export default function DisponibilidadPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-6">
-            {filtered.map((d) => {
-              const initials = `${d.tecnico?.nombre?.charAt(0) || 'T'}${d.tecnico?.apellido?.charAt(0) || 'S'}`.toUpperCase();
-              
-              const turnColors = {
-                mañana: 'bg-sky-50 text-sky-700 border-sky-100',
-                tarde: 'bg-amber-50 text-amber-700 border-amber-100',
-                noche: 'bg-purple-50 text-purple-700 border-purple-100',
-              };
-
-              const stateColors = {
-                disponible: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-                no_disponible: 'bg-red-50 text-red-700 border-red-100',
-              };
+          <div className="flex flex-col gap-6 pb-6">
+            {groupedList.map((item) => {
+              const { tecnico, schedules } = item;
+              const isExpanded = !!expandedTecnicos[tecnico.id_perfil];
+              const initials = `${tecnico.nombre?.charAt(0) || 'T'}${tecnico.apellido?.charAt(0) || 'S'}`.toUpperCase();
 
               return (
                 <div
-                  key={d.id_disponibilidad}
-                  className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-slate-200/60 transition flex flex-col gap-4 relative overflow-hidden group"
+                  key={tecnico.id_perfil}
+                  className="bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:shadow-sm transition overflow-hidden"
                 >
-                  {/* Fila 1: Técnico Avatar & Acciones */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0">
+                  {/* Fila Principal: Datos del Técnico */}
+                  <div
+                    onClick={() => toggleExpand(tecnico.id_perfil)}
+                    className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/40 select-none"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-100 text-blue-600 font-bold text-sm flex items-center justify-center shrink-0">
                         {initials}
                       </div>
-                      <div className="min-w-0">
-                        <h4 className="text-sm font-bold text-slate-800 truncate">
-                          {d.tecnico?.nombre} {d.tecnico?.apellido}
-                        </h4>
-                        <p className="text-[10px] text-slate-400 font-semibold truncate mt-0.5">
-                          {d.tecnico?.correo}
-                        </p>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                          {tecnico.nombre} {tecnico.apellido}
+                          <span className="text-xs text-slate-400 font-normal">({tecnico.cargo || 'Técnico de Soporte'})</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">{tecnico.correo}</p>
                       </div>
                     </div>
 
-                    {/* Botones de acción */}
-                    <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition shrink-0">
+                    <div className="flex items-center gap-3 self-end sm:self-auto">
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                        schedules.length > 0 
+                          ? 'bg-blue-50 text-blue-700 border-blue-100' 
+                          : 'bg-rose-50 text-rose-700 border-rose-100'
+                      }`}>
+                        {schedules.length} {schedules.length === 1 ? 'horario' : 'horarios'}
+                      </span>
+                      
                       <button
-                        onClick={() => setEditingDisp(d)}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        title="Editar"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDefaultTecnicoId(tecnico.id_perfil);
+                          setModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                       >
-                        <LuPencil className="text-sm" />
+                        <LuPlus className="text-sm shrink-0" />
+                        <span>Agregar Horario</span>
                       </button>
-                      <button
-                        onClick={() => setDeletingDispId(d.id_disponibilidad)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Eliminar"
-                      >
-                        <LuTrash2 className="text-sm" />
-                      </button>
+
+                      <div className="text-slate-400 p-1 hover:text-slate-600 text-xs font-bold text-blue-600">
+                        {isExpanded ? 'Ocultar ▲' : 'Ver turnos ▼'}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Fila 2: Fecha y Rango de Horarios */}
-                  <div className="flex flex-col gap-2 bg-slate-50/50 border border-slate-100/50 rounded-xl p-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <LuCalendar className="text-slate-400 text-base" />
-                      <span>{new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <LuClock className="text-slate-400 text-base" />
-                      <span>{d.hora_inicio.substring(0, 5)} - {d.hora_fin.substring(0, 5)}</span>
-                    </div>
-                  </div>
+                  {/* Sub-tabla de Horarios */}
+                  {isExpanded && (
+                    <div className="border-t border-slate-100 bg-slate-50/30 p-5">
+                      {schedules.length === 0 ? (
+                        <div className="text-center py-6 text-slate-400">
+                          <p className="text-xs font-semibold italic">Sin turnos asignados para este período.</p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDefaultTecnicoId(tecnico.id_perfil);
+                              setModalOpen(true);
+                            }}
+                            className="mt-2 text-xs text-blue-600 hover:text-blue-700 hover:underline font-bold cursor-pointer"
+                          >
+                            Asignar el primer turno ahora ➔
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto rounded-xl border border-slate-200/80 bg-white">
+                          <table className="w-full text-left text-xs">
+                            <thead>
+                              <tr className="border-b border-slate-200 bg-slate-50 text-slate-400 font-bold uppercase tracking-wider">
+                                <th className="px-5 py-3 w-1/3">Día / Fecha</th>
+                                <th className="px-4 py-3">Rango Horario</th>
+                                <th className="px-4 py-3">Turno</th>
+                                <th className="px-4 py-3">Estado</th>
+                                <th className="px-5 py-3 text-right">Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {schedules.map((d) => {
+                                const turnColors = {
+                                  mañana: 'bg-sky-50 text-sky-700 border-sky-100',
+                                  tarde: 'bg-amber-50 text-amber-700 border-amber-100',
+                                  noche: 'bg-purple-50 text-purple-700 border-purple-100',
+                                };
 
-                  {/* Fila 3: Turno y Estado Badges */}
-                  <div className="flex items-center gap-2 mt-auto">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full uppercase tracking-wider ${turnColors[d.turno] || 'bg-slate-50 text-slate-600'}`}>
-                      Turno: {d.turno}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full uppercase tracking-wider ${stateColors[d.estado] || 'bg-slate-50 text-slate-600'}`}>
-                      {d.estado === 'disponible' ? 'Disponible' : 'No Disponible'}
-                    </span>
-                  </div>
+                                const stateColors = {
+                                  disponible: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                                  no_disponible: 'bg-red-50 text-red-700 border-red-100',
+                                };
+
+                                return (
+                                  <tr key={d.id_disponibilidad} className="hover:bg-slate-50/50 transition">
+                                    <td className="px-5 py-3 font-semibold text-slate-700">
+                                      {new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES', {
+                                        weekday: 'long',
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric'
+                                      })}
+                                    </td>
+                                    <td className="px-4 py-3 font-medium text-slate-600">
+                                      {d.hora_inicio.substring(0, 5)} - {d.hora_fin.substring(0, 5)}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full uppercase tracking-wider ${turnColors[d.turno] || 'bg-slate-50'}`}>
+                                        {d.turno}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full uppercase tracking-wider ${stateColors[d.estado] || 'bg-slate-50'}`}>
+                                        {d.estado === 'disponible' ? 'Disponible' : 'No Disponible'}
+                                      </span>
+                                    </td>
+                                    <td className="px-5 py-3 text-right">
+                                      <div className="flex items-center justify-end gap-1.5 shrink-0">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingDisp(d);
+                                          }}
+                                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                                          title="Editar"
+                                        >
+                                          <LuPencil className="text-sm" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDeletingDispId(d.id_disponibilidad);
+                                          }}
+                                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                                          title="Eliminar"
+                                        >
+                                          <LuTrash2 className="text-sm" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -997,6 +1094,7 @@ export default function DisponibilidadPage() {
           }}
           userId={currentUser.id_auth_supabase ?? ''}
           tecnicos={tecnicos}
+          defaultTecnicoId={defaultTecnicoId}
         />
       )}
 

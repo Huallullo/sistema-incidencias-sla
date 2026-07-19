@@ -228,6 +228,7 @@ export default function ReporteCargaPage() {
 
       autoTable(doc, {
         startY: yPos,
+        margin: { top: 22, left: 14, right: 14, bottom: 15 },
         head: [['Técnico', 'Total', 'Abiertos', 'En Progreso', 'Resueltos', 'Cerrados', 'Críticos', 'Altos', 'Medios', 'Bajos', '% del Total']],
         body: rows,
         styles: { fontSize: 7.5, cellPadding: 2.5, textColor: darkText, halign: 'center' },
