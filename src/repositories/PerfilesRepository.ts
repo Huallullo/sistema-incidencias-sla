@@ -193,6 +193,8 @@ export class PerfilesRepository {
       apellido?: string;
       id_rol?: number;
       estado?: string;
+      intentos_fallidos?: number;
+      fecha_bloqueo?: string | null;
     }
   ): Promise<{ success: boolean; data?: PerfilUsuario; error?: string }> {
     try {
@@ -200,6 +202,8 @@ export class PerfilesRepository {
       if (profileData.telefono_interno !== undefined) updateData.telefono_interno = profileData.telefono_interno;
       if (profileData.cargo !== undefined) updateData.cargo = profileData.cargo;
       if (profileData.correo !== undefined) updateData.correo = profileData.correo;
+      if (profileData.intentos_fallidos !== undefined) updateData.intentos_fallidos = profileData.intentos_fallidos;
+      if (profileData.fecha_bloqueo !== undefined) updateData.fecha_bloqueo = profileData.fecha_bloqueo;
 
       if (profileData.nombre !== undefined) updateData.nombre = profileData.nombre;
       if (profileData.apellido !== undefined) updateData.apellido = profileData.apellido;

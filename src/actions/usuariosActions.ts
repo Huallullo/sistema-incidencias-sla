@@ -57,7 +57,11 @@ export async function actualizarUsuarioAction(
     }
 
     // 4. Ejecutar actualización del perfil en base de datos
-    const profileUpdateData = { ...data };
+    const profileUpdateData = { 
+      ...data,
+      intentos_fallidos: 0,
+      fecha_bloqueo: null,
+    };
     delete profileUpdateData.password; // La contraseña no va en la tabla perfiles
 
     const res = await PerfilesRepository.updateProfile(userId, profileUpdateData);
