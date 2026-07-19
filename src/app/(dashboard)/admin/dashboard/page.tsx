@@ -581,7 +581,7 @@ export default function AdminDashboardPage() {
                               {dayData.cerrado > 0 && (
                                 <div 
                                   style={{ height: `${pctCerrado}%` }} 
-                                  className="bg-slate-350 w-full transition-all duration-300"
+                                  className="bg-slate-300 w-full transition-all duration-300"
                                 />
                               )}
                             </div>
