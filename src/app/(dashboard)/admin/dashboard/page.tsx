@@ -168,10 +168,10 @@ export default function AdminDashboardPage() {
     1
   );
 
-  // Totales de estados para el pie del gráfico
-  const totalAbiertos = tickets.filter(t => t.estado === 'abierto').length;
-  const totalProgreso = tickets.filter(t => t.estado === 'en_progreso').length;
-  const totalCerrados = tickets.filter(t => t.estado === 'cerrado' || t.estado === 'resuelto').length;
+  // Totales de estados para el pie del gráfico (solo de la semana actual, consistentes con las barras)
+  const totalAbiertos = weeklyStatusCounts.reduce((sum, d) => sum + d.abierto, 0);
+  const totalProgreso = weeklyStatusCounts.reduce((sum, d) => sum + d.en_progreso, 0);
+  const totalCerrados = weeklyStatusCounts.reduce((sum, d) => sum + d.cerrado, 0);
   const totalCancelados = 0; // No hay estado cancelado explícito en tipo EstadoIncidencia
 
   // 4. Disponibilidad de técnicos en base a su carga de trabajo real
