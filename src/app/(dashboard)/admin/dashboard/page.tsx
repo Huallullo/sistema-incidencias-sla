@@ -533,18 +533,20 @@ export default function AdminDashboardPage() {
                     { dia: 'Sáb', valor: weeklyCounts[5] },
                     { dia: 'Dom', valor: weeklyCounts[6] },
                   ].map((bar, idx) => {
-                    const heightPercent = `${(bar.valor / maxWeeklyCount) * 90 + 5}%`; // Mínimo 5% si tiene valor
+                    const heightPercent = `${(bar.valor / maxWeeklyCount) * 85 + 15}%`; // Mínimo 15% si tiene valor para que sea visible
                     const showHeight = bar.valor > 0 ? heightPercent : '0%';
                     const barColor = getWeeklyBarColor(idx);
 
                     return (
-                      <div key={idx} className="flex flex-col items-center flex-1 group">
-                        <div 
-                          style={{ height: showHeight }} 
-                          className={`w-full ${barColor} rounded-t-sm transition-all duration-300 group-hover:opacity-80`} 
-                          title={`${bar.valor} tickets`}
-                        />
-                        <span className="text-[10px] text-slate-400 font-bold mt-2">{bar.dia}</span>
+                      <div key={idx} className="flex flex-col items-center justify-end h-full flex-1 group">
+                        <div className="w-full relative flex items-end justify-center flex-1 min-h-0">
+                          <div 
+                            style={{ height: showHeight }} 
+                            className={`w-full ${barColor} rounded-t-sm transition-all duration-300 group-hover:opacity-80`} 
+                            title={`${bar.valor} tickets`}
+                          />
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-bold mt-2 shrink-0">{bar.dia}</span>
                       </div>
                     );
                   })}

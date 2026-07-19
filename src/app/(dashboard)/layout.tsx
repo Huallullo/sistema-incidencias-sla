@@ -16,6 +16,7 @@ import {
   LuLogOut,
   LuMonitorX,
   LuHeart,
+  LuMenu,
 } from 'react-icons/lu';
 import { FaHeadphones, FaSpinner } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
@@ -31,6 +32,11 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<PerfilUsuario | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     async function checkSession() {
@@ -448,9 +454,21 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] text-slate-800">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[#f8fafc] text-slate-800 overflow-hidden">
+      {/* Backdrop overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* ── SIDEBAR LATERAL CENTRALIZADO (FIGMA) ─────────────────────────── */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0">
+      <aside className={`w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 transition-transform duration-300 z-50 ${
+        isSidebarOpen 
+          ? 'fixed inset-y-0 left-0 translate-x-0 shadow-2xl h-screen' 
+          : 'fixed inset-y-0 left-0 -translate-x-full lg:static lg:h-auto lg:translate-x-0'
+      }`}>
         <div>
           {/* Logo y Encabezado de Sidebar */}
           <div className="p-6 border-b border-slate-100">
@@ -524,8 +542,27 @@ export default function DashboardLayout({
       </aside>
 
       {/* ── CONTENIDO PRINCIPAL INYECTADO (CHILDREN) ────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {children}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile Header Top Bar */}
+        <div className="lg:hidden h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shrink-0 z-30">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-800 transition cursor-pointer border border-slate-150 bg-white"
+          >
+            <LuMenu size={20} />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-base">
+              <FaHeadphones size={14} />
+            </div>
+            <span className="font-bold text-slate-800 tracking-tight text-sm">Help Desk TI</span>
+          </div>
+          <div className="w-10 h-10" />
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
       </div>
     </div>
   );
