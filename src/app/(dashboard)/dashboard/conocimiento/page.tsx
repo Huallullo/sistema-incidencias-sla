@@ -14,6 +14,8 @@ import {
   LuTriangle,
   LuCircleCheck,
   LuFileText,
+  LuChevronLeft,
+  LuChevronRight,
 } from 'react-icons/lu';
 import { FaSpinner } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
@@ -46,6 +48,7 @@ export default function ConocimientoPage() {
   // Estados del Buscador y Filtros
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSearching, setIsSearching] = useState(false); // true durante debounce activo
 
   // Estados del Formulario (Creación)
@@ -107,6 +110,7 @@ export default function ConocimientoPage() {
       });
       if (res.success && res.data) {
         setArticulos(res.data);
+        setCurrentPage(1);
       }
       setLoadingArticulos(false);
       setIsSearching(false);
@@ -241,6 +245,11 @@ export default function ConocimientoPage() {
   }
 
   const isAuthorizedToCreate = currentUser?.id_rol === 1 || currentUser?.id_rol === 2;
+
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(articulos.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentItems = articulos.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto px-4 py-2">
@@ -399,7 +408,7 @@ export default function ConocimientoPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {articulos.map((art) => (
+          {currentItems.map((art) => (
             <div
               key={art.id_articulo}
               onClick={() => handleViewArticle(art)}
@@ -449,6 +458,36 @@ export default function ConocimientoPage() {
               </div>
             </div>
           ))}
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-150 col-span-full">
+              <span className="text-xs text-slate-500 font-medium">
+                Mostrando <span className="font-semibold text-slate-700">{startIndex + 1}</span> al{' '}
+                <span className="font-semibold text-slate-700">{Math.min(startIndex + itemsPerPage, articulos.length)}</span> de{' '}
+                <span className="font-semibold text-slate-700">{articulos.length}</span> artículos
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCurrentPage((p) => Math.max(p - 1, 1)); }}
+                  disabled={currentPage === 1}
+                  className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                >
+                  <LuChevronLeft size={14} />
+                </button>
+                <span className="text-xs text-slate-600 font-semibold px-1">
+                  Pág. {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCurrentPage((p) => Math.min(p + 1, totalPages)); }}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                >
+                  <LuChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -17,6 +17,8 @@ import {
   LuLayers,
   LuPencil,
   LuHistory,
+  LuChevronLeft,
+  LuChevronRight,
 } from 'react-icons/lu';
 import { registrarEquipoAction, obtenerEquiposAction, actualizarEquipoAction, obtenerHistorialEstadosAction } from '@/actions/equipoActions';
 import { AuthService } from '@/services/AuthService';
@@ -697,6 +699,7 @@ export default function EquiposPage() {
   const [filteredEquipos, setFilteredEquipos] = useState<EquipoInformatico[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEquipo, setEditingEquipo] = useState<EquipoInformatico | null>(null);
@@ -754,6 +757,7 @@ export default function EquiposPage() {
     const q = searchQuery.toLowerCase().trim();
     if (!q) {
       setFilteredEquipos(equipos);
+      setCurrentPage(1);
       return;
     }
 
@@ -768,6 +772,7 @@ export default function EquiposPage() {
         e.tipo.toLowerCase().includes(q)
     );
     setFilteredEquipos(filtered);
+    setCurrentPage(1);
   }, [searchQuery, equipos]);
 
   const handleRegisterSuccess = () => {
@@ -810,6 +815,11 @@ export default function EquiposPage() {
       </div>
     );
   }
+
+  const itemsPerPage = 9;
+  const totalPages = Math.ceil(filteredEquipos.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentItems = filteredEquipos.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="p-6 max-w-7xl mx-auto flex flex-col gap-6">
@@ -885,7 +895,7 @@ export default function EquiposPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEquipos.map((equipo) => {
+          {currentItems.map((equipo) => {
             const statusConfig = {
               operativo: { bg: 'bg-emerald-50 text-emerald-700 border-emerald-100', label: 'Operativo' },
               mantenimiento: { bg: 'bg-amber-50 text-amber-700 border-amber-100', label: 'Mantenimiento' },
@@ -956,6 +966,36 @@ export default function EquiposPage() {
               </div>
             );
           })}
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100 col-span-full">
+              <span className="text-xs text-slate-500 font-medium">
+                Mostrando <span className="font-semibold text-slate-700">{startIndex + 1}</span> al{' '}
+                <span className="font-semibold text-slate-700">{Math.min(startIndex + itemsPerPage, filteredEquipos.length)}</span> de{' '}
+                <span className="font-semibold text-slate-700">{filteredEquipos.length}</span> equipos
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                >
+                  <LuChevronLeft size={14} />
+                </button>
+                <span className="text-xs text-slate-600 font-semibold px-1">
+                  Pág. {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                >
+                  <LuChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

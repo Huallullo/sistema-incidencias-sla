@@ -15,6 +15,8 @@ import {
   LuHistory,
   LuShieldAlert,
   LuActivity,
+  LuChevronLeft,
+  LuChevronRight,
 } from 'react-icons/lu';
 import { obtenerEquiposAction, obtenerDetalleEquipoAction } from '@/actions/equipoActions';
 import { AuthService } from '@/services/AuthService';
@@ -248,6 +250,7 @@ export default function ConsultaEquiposPage() {
 
   const [equipos, setEquipos] = useState<EquipoInformatico[]>([]);
   const [loadingList, setLoadingList] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filtros interactivos
   const [filters, setFilters] = useState({
@@ -302,6 +305,7 @@ export default function ConsultaEquiposPage() {
     
     if (result.success && result.data) {
       setEquipos(result.data);
+      setCurrentPage(1);
 
       // Cargar lista única de ubicaciones sólo en la primera carga si no se ha filtrado
       if (filters.query === '' && filters.tipo === 'all' && filters.estado_operativo === 'all' && filters.ubicacion === 'all') {
@@ -349,6 +353,11 @@ export default function ConsultaEquiposPage() {
       </div>
     );
   }
+
+  const itemsPerPage = 9;
+  const totalPages = Math.ceil(equipos.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentItems = equipos.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="p-6 max-w-7xl mx-auto flex flex-col gap-6">
@@ -470,7 +479,7 @@ export default function ConsultaEquiposPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {equipos.map((equipo) => {
+          {currentItems.map((equipo) => {
             const statusConfig = {
               operativo: { bg: 'bg-emerald-50 text-emerald-700 border-emerald-100', label: 'Operativo' },
               mantenimiento: { bg: 'bg-amber-50 text-amber-700 border-amber-100', label: 'Mantenimiento' },
@@ -528,6 +537,36 @@ export default function ConsultaEquiposPage() {
               </div>
             );
           })}
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100 col-span-full">
+              <span className="text-xs text-slate-500 font-medium">
+                Mostrando <span className="font-semibold text-slate-700">{startIndex + 1}</span> al{' '}
+                <span className="font-semibold text-slate-700">{Math.min(startIndex + itemsPerPage, equipos.length)}</span> de{' '}
+                <span className="font-semibold text-slate-700">{equipos.length}</span> equipos
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCurrentPage((p) => Math.max(p - 1, 1)); }}
+                  disabled={currentPage === 1}
+                  className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                >
+                  <LuChevronLeft size={14} />
+                </button>
+                <span className="text-xs text-slate-600 font-semibold px-1">
+                  Pág. {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCurrentPage((p) => Math.min(p + 1, totalPages)); }}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                >
+                  <LuChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

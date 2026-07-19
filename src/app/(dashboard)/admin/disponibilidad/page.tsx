@@ -15,6 +15,8 @@ import {
   LuCalendar,
   LuUser,
   LuLoader,
+  LuChevronLeft,
+  LuChevronRight,
 } from 'react-icons/lu';
 import { 
   registrarDisponibilidadAction, 
@@ -649,6 +651,11 @@ export default function DisponibilidadPage() {
   const [filterEstado, setFilterEstado] = useState('todos');
   const [filterFechaInicio, setFilterFechaInicio] = useState('');
   const [filterFechaFin, setFilterFechaFin] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterTurno, filterEstado, filterFechaInicio, filterFechaFin]);
 
   // Modales y Toasts
   const [modalOpen, setModalOpen] = useState(false);
@@ -781,6 +788,11 @@ export default function DisponibilidadPage() {
       </div>
     );
   }
+
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(groupedList.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentItems = groupedList.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/40 px-6 py-6 gap-6">
@@ -922,7 +934,7 @@ export default function DisponibilidadPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-6 pb-6">
-            {groupedList.map((item) => {
+            {currentItems.map((item) => {
               const { tecnico, schedules } = item;
               const isExpanded = !!expandedTecnicos[tecnico.id_perfil];
               const initials = `${tecnico.nombre?.charAt(0) || 'T'}${tecnico.apellido?.charAt(0) || 'S'}`.toUpperCase();
@@ -1079,6 +1091,36 @@ export default function DisponibilidadPage() {
                 </div>
               );
             })}
+
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200">
+                <span className="text-xs text-slate-500 font-medium">
+                  Mostrando <span className="font-semibold text-slate-700">{startIndex + 1}</span> al{' '}
+                  <span className="font-semibold text-slate-700">{Math.min(startIndex + itemsPerPage, groupedList.length)}</span> de{' '}
+                  <span className="font-semibold text-slate-700">{groupedList.length}</span> técnicos
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                  >
+                    <LuChevronLeft size={14} />
+                  </button>
+                  <span className="text-xs text-slate-600 font-semibold px-1">
+                    Pág. {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                  >
+                    <LuChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -17,6 +17,8 @@ import {
   FaCheckCircle,
   FaStar,
   FaRegStar,
+  FaChevronLeft,
+  FaChevronRight,
 } from 'react-icons/fa';
 import { AuthService } from '@/services/AuthService';
 import { PerfilesRepository } from '@/repositories/PerfilesRepository';
@@ -53,6 +55,7 @@ export default function TicketsPage() {
   const [currentUser, setCurrentUser] = useState<PerfilUsuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState<Incidencia[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -489,8 +492,10 @@ export default function TicketsPage() {
 
       if (result.success) {
         setTickets(result.data || []);
+        setCurrentPage(1);
       } else {
         setErrorMsg(result.error || 'Error al recuperar los tickets');
+        setCurrentPage(1);
       }
       setLoadingTickets(false);
     }
@@ -628,6 +633,11 @@ export default function TicketsPage() {
       minute: '2-digit',
     });
   };
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(tickets.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentItems = tickets.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="flex flex-1 flex-col min-w-0 bg-[#f8fafc]">
@@ -798,7 +808,7 @@ export default function TicketsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {tickets.map((ticket) => (
+            {currentItems.map((ticket) => (
               <div
                 key={ticket.id_incidencia}
                 onClick={() => setSelectedTicket(ticket)}
@@ -838,6 +848,36 @@ export default function TicketsPage() {
                 </div>
               </div>
             ))}
+
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                <span className="text-xs text-slate-500 font-medium">
+                  Mostrando <span className="font-semibold text-slate-700">{startIndex + 1}</span> al{' '}
+                  <span className="font-semibold text-slate-700">{Math.min(startIndex + itemsPerPage, tickets.length)}</span> de{' '}
+                  <span className="font-semibold text-slate-700">{tickets.length}</span> tickets
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setCurrentPage((p) => Math.max(p - 1, 1)); }}
+                    disabled={currentPage === 1}
+                    className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                  >
+                    <FaChevronLeft size={12} />
+                  </button>
+                  <span className="text-xs text-slate-600 font-semibold px-1">
+                    Pág. {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setCurrentPage((p) => Math.min(p + 1, totalPages)); }}
+                    disabled={currentPage === totalPages}
+                    className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition cursor-pointer"
+                  >
+                    <FaChevronRight size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
