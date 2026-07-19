@@ -44,7 +44,10 @@ export async function actualizarUsuarioAction(
 
       const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
         userId,
-        { password: data.password.trim() }
+        { 
+          password: data.password.trim(),
+          email_confirm: true // Confirma automáticamente el correo en Supabase Auth
+        }
       );
 
       if (authError) {
@@ -54,6 +57,19 @@ export async function actualizarUsuarioAction(
           error: `Error al actualizar la contraseña del usuario: ${authError.message}`,
         };
       }
+    } else {
+      // Si no se cambia la contraseña pero se actualizan otros datos, asegurar que el correo esté confirmado
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.MY_SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      );
+      await supabaseAdmin.auth.admin.updateUserById(userId, { email_confirm: true });
     }
 
     // 4. Ejecutar actualización del perfil en base de datos

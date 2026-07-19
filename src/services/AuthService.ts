@@ -53,6 +53,15 @@ export class AuthService {
       });
 
       if (error) {
+        // Si el correo no está confirmado en Supabase
+        if (error.message.toLowerCase().includes('confirm') || error.message.toLowerCase().includes('email_not_confirmed')) {
+          return {
+            user: null,
+            session: null,
+            error: 'Correo electrónico no confirmado. Contacte al Jefe de TI.',
+          };
+        }
+
         // Incrementar intentos fallidos usando el RPC
         const failedResult = await AuthService.handleFailedLogin(credentials.email);
 
